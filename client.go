@@ -24,23 +24,49 @@ func WaitForACK(conn *net.UDPConn, ack chan bool){
 }
 
 //Send UDP msg
-func SendUDPMsg(conn *net.UDPConn, msg []byte) (err error){
-    n,err := conn.Write(msg)
+func SendUDPMsg(conn *net.UDPConn, ReliableConn *net.UDPConn, msg []byte) (err error){
+    for {
 
-    if err != nil {
-        fmt.Println(msg, err)
-    }
 
-    fmt.Printf("n:%d\n", n)
+        n,err := conn.Write(msg)
 
-    time.Sleep(time.Second * 1)
+        //Timeout channels
+        ack := make(chan bool)
+        timeout := make(chan bool)
+
+        if err != nil {
+            fmt.Println(msg, err)
+        }
+
+        fmt.Printf("written:%d\n", n)
+
+
+     // Wait for ACK, start timer
+        fmt.Printf("Waiting 5s for ACK...\n")
+        go WaitForACK(ReliableConn, ack)
+        go Timeout(timeout)
+
+
+        
+            select{
+            case <- ack:
+                    fmt.Println("ACK recv'd\n")
+                    return nil
+                    //ACK happened
+
+            case <- timeout:
+                    fmt.Println("Timeout, retry..\n")
+                    //Timeout happened
+            }
+        
+        }
 
     return err
 }
 
 //Timer/timeout function
 func Timeout(timeout chan bool) {
-            time.Sleep(2 * time.Second)
+            time.Sleep(5 * time.Second)
             timeout <- true
 }
 
@@ -63,7 +89,6 @@ func main() {
     Conn, err := net.DialUDP("udp", LocalAddr, ServerAddr)
     CheckError(err)
 
-
     /* Now listen at selected port */
     ReliableConn, err := net.ListenUDP("udp", ServerAddr2)
     CheckError(err)
@@ -71,43 +96,15 @@ func main() {
  
     defer Conn.Close()
 
+    // Infinitely send msgs, for now
+    i := 0
     for {
-        msg :="testmsg"
+        i++
+        msg := fmt.Sprintf("Test: #%d\n", i)
         buf1 := []byte(msg)
 
-        //Timeout channels
-        ack := make(chan bool)
-        timeout := make(chan bool)
-
-
         //Try to send UDP message
-        SendUDPMsg(Conn, buf1);
-        
-
-        // Wait for ACK, start timer
-        fmt.Printf("Waiting 2s for ACK...\n")
-        go WaitForACK(ReliableConn, ack)
-        go Timeout(timeout)
-
-
-        for {
-
-            select{
-            case <- ack:
-                    fmt.Println("ACK recv'd")
-                    break
-                    //ACK happened
-
-            case <- timeout:
-                    fmt.Println("Timeout, retry..")
-
-                    SendUDPMsg(Conn, buf1);
-                    go Timeout(timeout);
-                    go WaitForACK(ReliableConn, ack)
-                    //Timeout happened
-            }
-        }
-
+        SendUDPMsg(Conn, ReliableConn, buf1);
 
     }
 }
