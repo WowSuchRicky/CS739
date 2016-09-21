@@ -1,11 +1,12 @@
-The code in this directory is composed of three parts:
-1. Simple UDP library
+
+
+## What's Here?
+1. Simple UDP library (it's not reliable yet!)
 2. Client for sending message to server
 3. Server for receiving messages and sending reply
-(NOTE: I'm currently making it reliable, so I really haven't done much yet...)
 
 ----------------
-To invoke:
+## To Use:
 
 1. make all
 
@@ -21,11 +22,11 @@ To invoke:
    - server instance will print the message
    - client will print server's reply
 
-----------------
-Other notes:
+---------------
+## Other Notes:
 Editing run_client and run_server in makefile will let you:
-- change the client->server message
-- change the server->client message
+- change the client -> server message
+- change the server -> client message
 - change the server hostname for client to connect to
 
 If you need to change socket port numbers, edit server.c and client.c directly.
