@@ -15,10 +15,11 @@ int udpRead(int sockfd, struct sockaddr_in* addr, char* buffer, int buffer_len);
 // Fill addr with host and port information
 int udpFillAddr(struct sockaddr_in* addr, char* hostName, int port);
 
+// Reliable version of UDP write (wait timeout seconds until retry send, blocks until acknowledgment received)
+int udpWriteRel(int sockfd, struct sockaddr_in* dest, char* buffer, int buffer_len, int timeout);
+
+// Reliable version of UDP read (sends acknowledgment after each read)
+int udpReadRel(int sockfd, struct sockaddr_in* addr, char* buffer, int buffer_len, int dropPercentage);
+
 #define H_UDP_LIB
 #endif
-
-
-// currently configured so that:
-// 1) server should run on betelgeuse.cs.wisc.edu
-// 2) client can run on anything

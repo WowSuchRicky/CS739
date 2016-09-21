@@ -1,0 +1,24 @@
+Current progress: 
+
+1. (done)
+2. (done)
+3. (I don't think we need to do this, so skipping)
+4. (done but not tested)
+
+--------------------------------
+Descriptions
+
+1. Use simple timeout-retry mechanism to:
+   Detect when receiver has not received a message.
+   Resend until receiver sends acknowledgment.
+   Send code should be blocking.
+
+2. Update to use actual timer instead of just a variable placeholder
+
+3. Update that to use a sequence counter. 
+   This solves one specific issue: if acknowledgment is lost.
+   In using a counter, we ensure that the message on receiving end is
+   NOT received multiple times (as would be the case if it was sent multiple
+   times intentionally!)
+
+4. Timing exercises?

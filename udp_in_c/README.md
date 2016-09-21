@@ -5,7 +5,6 @@
 2. Client for sending message to server
 3. Server for receiving messages and sending reply
 
-----------------
 ## To Use:
 
 1. make all
@@ -22,7 +21,6 @@
    - server instance will print the message
    - client will print server's reply
 
----------------
 ## Other Notes:
 Editing run_client and run_server in makefile will let you:
 - change the client -> server message

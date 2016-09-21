@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <string.h>
 #include "udp_lib.h"
 
 #define BUFFER_SIZE 1024
@@ -22,13 +23,14 @@ int main(int argc, char* argv[]) {
   
   // fill addr with server information and send message to server
   rc = udpFillAddr(&addr, argv[1], SERVER_SOCKET);
-  rc = udpWrite(sd, &addr, argv[2], BUFFER_SIZE);
+  rc = udpWriteRel(sd, &addr, argv[2], BUFFER_SIZE, 10);
 
   // read and print server reply
   if (rc > 0) {
     char recMessage[BUFFER_SIZE];
-    rc = udpRead(sd, &addr2, recMessage, BUFFER_SIZE);
-    printf("Message received from server: %s\n", recMessage);
+    memset(recMessage, '\0', BUFFER_SIZE);
+    rc = udpReadRel(sd, &addr2, recMessage, BUFFER_SIZE, 0);
+    if (rc > 0) printf("Message received from server: %s\n", recMessage);
   }
   return 0;
 }
