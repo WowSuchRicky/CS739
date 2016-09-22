@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     char message[BUFFER_SIZE];
     memset(message, '\0', BUFFER_SIZE);
 
-    int rc = udpReadRel(sd, &addr, message, BUFFER_SIZE, 50); 
+    int rc = udpReadRel(sd, &addr, message, BUFFER_SIZE, 0); 
     if (rc > 0) {
       printf("Message from client: %s\n", message);
       udpWriteRel(sd, &addr, argv[1], BUFFER_SIZE, 5);
