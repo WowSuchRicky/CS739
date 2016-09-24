@@ -2,6 +2,7 @@ CC = gcc
 CFLAGS = -Wall -O0
 DEPS = udp_lib.h
 LDFLAGS = -lrt
+SERVER_HOST = "betelgeuse.cs.wisc.edu"
 
 all: server.o client.o udp_lib.o
 	gcc $(CFLAGS) -o server server.o udp_lib.o $(LDFLAGS)
@@ -11,7 +12,7 @@ all: server.o client.o udp_lib.o
 	%(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 
 run_client: client
-	./client "betelgeuse.cs.wisc.edu" "Hello m'server!"
+	./client $(SERVER_HOST) "Hello m'server!"
 
 run_server: server
 	./server "Get away from me client!!!"

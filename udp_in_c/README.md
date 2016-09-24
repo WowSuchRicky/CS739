@@ -9,24 +9,19 @@
 
 1. make all
 
-2. On the machine that you want to be server (keep in mind hostname)...
+2. On the machine that you want to be server (keep in mind hostname), run:
    make run_server
 
-3. Edit run_client rule in Makefile; change the existing hostname to hostname from step 2
+3. Change SERVER_HOST variable in Makefile to the hostname from step 2.
 
-3. On the machine that you want to be client...
+3. On the machine that you want to be client, run:
    make run_client 
 
 4. If successful:
    - server instance will print the message
-   - client will print server's reply
+   - client will print notification that ack was received
 
 ## Other Notes:
-Editing run_client and run_server in makefile will let you:
-- change the client -> server message
-- change the server -> client message
-- change the server hostname for client to connect to
-
 If you need to change socket port numbers, edit server.c and client.c directly.
 
 
