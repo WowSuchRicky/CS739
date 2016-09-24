@@ -13,12 +13,6 @@
 // https://www.cs.rutgers.edu/~pxk/417/notes/sockets/udp.html
 // http://pages.cs.wisc.edu/~remzi/OSTEP/dist-intro.pdf
 
-// What kind of API do we need?
-//  1) open a port (which creates socket)
-//  2) write to a socket
-//  3) read from a socket
-//  4) populate sockaddr_in structure
-
 int udpOpen(int port) {
   
   int sd; // file descriptor for socket
@@ -51,9 +45,13 @@ int udpWrite(int sockfd, struct sockaddr_in* dest, char* buffer, int buffer_len)
 		sizeof(struct sockaddr_in));
 }
 
+// returns the bytes read, or -1 if error
 int udpRead(int sockfd, struct sockaddr_in* addr, char* buffer, int buffer_len) {
   int addrLen = sizeof(struct sockaddr_in);
-  return recvfrom(sockfd, buffer, buffer_len, 0, (struct sockaddr*)addr, 
+  return recvfrom(sockfd, 
+		  buffer, buffer_len, 
+		  MSG_DONTWAIT,      // non-blocking read (change to 0 for blocking)
+		  (struct sockaddr*)addr, 
 		  (socklen_t*)&addrLen);
 }
 
@@ -98,17 +96,17 @@ int udpWriteRel(int sockfd, struct sockaddr_in* dest, char* buffer, int buffer_l
   int ack_len = sizeof(char);
   memset(ack, 0, ack_len);
 
-  // repeat send attempt until receive ack
+  // repeat send attempt every 'timeout' seconds until receive ack
   while (!ackRec) {
+    printf("Attempting send.\n");
     rc = udpWrite(sockfd, dest, buffer, buffer_len);
-    printf("DEBUG: trying to send.\n");
 
+    // repeatedly check for acknowledgment until timoeut    
     assert (clock_gettime(CLOCK_REALTIME, time) != -1);
     startTime = time->tv_sec;
-    
-    // repeatedly check for acknowledgment until timoeut
     while (time->tv_sec - startTime < timeout) {
 
+      // use unreliable read, we don't want to send ack of an ack
       udpRead(sockfd, dest, ack, ack_len);
       if (*ack == 1) {
 	ackRec = 1;
@@ -132,19 +130,18 @@ int udpWriteRel(int sockfd, struct sockaddr_in* dest, char* buffer, int buffer_l
 // 2) send a single byte with value 1 as acknowledgment back to the sender
 int udpReadRel(int sockfd, struct sockaddr_in* addr, char* buffer, int buffer_len, int dropPercentage) {
 
-  // simulate a dropped call by doing nothing
+  // simulate a dropped call by clearing socket buffer and returning (don't send ack)
   int randNum = rand() % 100;
   if (randNum < dropPercentage) {
-    printf("Dropping message (receiver won't read it or send ack.\n");
-    // Should we be reading from the socket (something like clearing the socket buffer?)
-    // udpRead(sockfd, addr, buffer, buffer_len); 
+    udpRead(sockfd, addr, buffer, buffer_len);
     return -1;
   }
 
-  // read data
   int rc = udpRead(sockfd, addr, buffer, buffer_len);
-  
-  // send single-byte acknowledgement
+  if (rc <= 0) return rc;
+
+  // send single-byte acknowledgement only if we read something
+  printf("Message successfully read, sending ack.\n");
   char* ack = (char*)malloc(sizeof(char));
   memset(ack, 1, sizeof(char));
   udpWrite(sockfd, addr, ack, sizeof(char));

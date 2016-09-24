@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -O0
 DEPS = udp_lib.h
 LDFLAGS = -lrt
 

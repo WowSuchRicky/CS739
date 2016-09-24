@@ -18,19 +18,21 @@ int main(int argc, char* argv[]) {
   }
 
   int sd, rc;
-  struct sockaddr_in addr, addr2;
+  struct sockaddr_in addr;
   sd = udpOpen(CLIENT_SOCKET);
   
-  // fill addr with server information and send message to server
-  rc = udpFillAddr(&addr, argv[1], SERVER_SOCKET);
-  rc = udpWriteRel(sd, &addr, argv[2], BUFFER_SIZE, 10);
+  int msg_size = 0;
+  while (*(argv[2] + msg_size++) != '\0') { }
+  msg_size++; // to account for null char
 
-  // read and print server reply
-  if (rc > 0) {
-    char recMessage[BUFFER_SIZE];
-    memset(recMessage, '\0', BUFFER_SIZE);
-    rc = udpReadRel(sd, &addr2, recMessage, BUFFER_SIZE, 0);
-    if (rc > 0) printf("Message received from server: %s\n", recMessage);
-  }
+  // get address info for hostname
+  rc = udpFillAddr(&addr, argv[1], SERVER_SOCKET);
+  
+  // send message to that host (TODO: wrap timer around this for measurements)
+  rc = udpWriteRel(sd, &addr, argv[2], msg_size, 2);
+
+  // write procedure blocks until ack, so we know it was received
+  printf("Ack received thus message was received!\n");
+
   return 0;
 }

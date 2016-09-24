@@ -9,6 +9,11 @@
 
 #define BUFFER_SIZE 1024
 #define SERVER_SOCKET 10000
+#define MSG_DROP_PERCENT 50
+
+// What do we need?
+// A client (sender) that will send msg, wait, and send again if didn't receive ack
+// A server (receiver) that will read a message and send an acknowledgment
 
 int main(int argc, char* argv[]) {
 
@@ -19,18 +24,18 @@ int main(int argc, char* argv[]) {
 
   int sd = udpOpen(SERVER_SOCKET);
   assert(sd > -1);
+  char message[BUFFER_SIZE];
+  int msgN = 0;
 
   while (1) {
     struct sockaddr_in addr;
 
-    // read the message from client (addr is filled in with client addr info during read)
-    char message[BUFFER_SIZE];
-    memset(message, '\0', BUFFER_SIZE);
+    // read message from client and send acknowledgment
+    int rc = udpReadRel(sd, &addr, message, BUFFER_SIZE, MSG_DROP_PERCENT); 
 
-    int rc = udpReadRel(sd, &addr, message, BUFFER_SIZE, 0); 
-    if (rc > 0) {
-      printf("Message from client: %s\n", message);
-      udpWriteRel(sd, &addr, argv[1], BUFFER_SIZE, 5);
+    if (rc > 0) { 
+      printf("Message %d from client: %s\n", msgN++, message);
+      memset(message, '\0', BUFFER_SIZE);
     }
   }
 
