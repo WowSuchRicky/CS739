@@ -1,11 +1,12 @@
 
 
-## What's Here?
-1. Simple UDP library (it's not reliable yet!)
+## What's here?
+1. Simple UDP library (unreliable + reliable APIs)
 2. Client for sending message to server
-3. Server for receiving messages and sending reply
+3. Server for receiving messages and sending acknowledgment
+4. Measurements results from various experiments (see below)
 
-## To Use:
+## To use:
 
 1. make all
 
@@ -18,10 +19,28 @@
    make run_client 
 
 4. If successful:
-   - server instance will print the message
+   - client will send a single message to the server
+   - server will print the message
+   - server will send an acknowledgment in return
    - client will print notification that ack was received
+   - the time in seconds and nanoseconds for roundtrip (client -> server -> client) will be recorded in a log file
 
-## Other Notes:
-If you need to change socket port numbers, edit server.c and client.c directly.
+## Other notes:
+- If you need to change socket port numbers, edit server.c and client.c directly
+- Most other interesting parameters can be changed in the Makefile
 
+## To perform measurements:
+1. Tweak settings in Makefile as desired (optimizations, time between send retries, etc.)
+2. Follow the above usage steps, but use "make run_client_experiment" at step 3.
 
+## Completed measurements:
+1. Roundtrip length of 100 messages sent from process on one machine to process on the same machine in succession with (0/10/20/30/50/90)% chance of dropping
+2. Roundtrip length of 100 messages sent from process on one machine to process on a different machine (across network) in succession with (0/10/20/30/50/90%) chance of dropping
+3. Repeated #1 and #2 with -O3 optimizations (as opposed to -O0 optimizations, i.e. none)
+
+## TODO:
+1. Bandwidth measurements (when sending large number of max-sized packets) on one machine (see question #2)
+2. Bandwidth measurements across machines (see question #3)
+3. Repeat same bandwidth measurements with -O3 optimizations
+4. Answer question (think U-net paper): how much overhead is there to send a message?
+5. Answer questions: what limits the bandwidth, and how could we do better?
