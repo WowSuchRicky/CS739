@@ -19,9 +19,9 @@ main:
     mov %rax, %rdx
 	
     # printf the RDTSC val, (rax | rdx<<32)
-    mov $format, %rdi
-    mov %rax, %rsi
-    call printf
+    #mov $format, %rdi
+    #mov %rax, %rsi
+    #call printf
     
     	
     # call RDTSC again (turn to function later)
