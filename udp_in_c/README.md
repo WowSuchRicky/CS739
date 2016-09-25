@@ -37,10 +37,11 @@
 1. Roundtrip length of 100 messages sent from process on one machine to process on the same machine in succession with (0/10/20/30/50/90)% chance of dropping
 2. Roundtrip length of 100 messages sent from process on one machine to process on a different machine (across network) in succession with (0/10/20/30/50/90%) chance of dropping
 3. Repeated #1 and #2 with -O3 optimizations (as opposed to -O0 optimizations, i.e. none)
+4. Bandwidth measurements (when sending large number of max-sized packets) on one machine
+5. Bandwidth measurements across machines
+6. Repeated #4 and #5 bandwidth measurements with -O3 optimizations
 
 ## TODO:
-1. Bandwidth measurements (when sending large number of max-sized packets) on one machine (see question #2)
-2. Bandwidth measurements across machines (see question #3)
-3. Repeat same bandwidth measurements with -O3 optimizations
-4. Answer question (think U-net paper): how much overhead is there to send a message?
-5. Answer questions: what limits the bandwidth, and how could we do better?
+1. Graph those results
+2. Answer question (think U-net paper): how much overhead is there to send a message?
+3. Answer questions: what limits the bandwidth, and how could we do better?
