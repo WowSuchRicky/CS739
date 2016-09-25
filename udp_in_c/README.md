@@ -40,8 +40,8 @@
 4. Bandwidth measurements (when sending large number of max-sized packets) on one machine
 5. Bandwidth measurements across machines
 6. Repeated #4 and #5 bandwidth measurements with -O3 optimizations
+7. Graphed interesting comparisons
 
 ## TODO:
-1. Graph those results
-2. Answer question (think U-net paper): how much overhead is there to send a message?
-3. Answer questions: what limits the bandwidth, and how could we do better?
+1. Answer question (think U-net paper): how much overhead is there to send a message?
+2. Answer questions: what limits the bandwidth, and how could we do better?
