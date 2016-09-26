@@ -17,12 +17,18 @@ def main():
     output = subprocess.check_output(['./Calculator_client', sys.argv[1], sys.argv[2]])
     end_time = time.time()
 
-    print "Time elapsed: ", end_time - start_time
+    time_elapsed = end_time - start_time;
+
+    print "Time elapsed: ", time_elapsed
     
     pnd2 = pndev.ProcNetDev()
     end_bytes = pnd2['p3p1']['transmit']['bytes']
 
-    print "Data sent: ", (end_bytes - start_bytes) / 1000, " MB"
-    print "Bandwidth: ", (end_bytes - start_bytes) / ((end_time - start_time)/2) / 1000, " MBytes/sec" 
+    bytes_sent = end_bytes - start_bytes
+    kbytes_sent = bytes_sent / 1000.0;
+    mbytes_sent = kbytes_sent / 1000.0;
+
+    print "Data sent: ", mbytes_sent, " MB"
+    print "Bandwidth: ", (mbytes_sent*8) / (time_elapsed/2), " Mbits/sec" 
 
 main()
