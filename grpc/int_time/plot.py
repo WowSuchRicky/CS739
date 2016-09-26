@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
 
+def med(numbers):
+    numbers.sort()
+    return numbers[len(numbers)/2]
+
 times = []
 for i in range(32):
     times.append([])
@@ -13,8 +17,8 @@ for i in range(32):
 avg_first_times = []
 avg_second_times = []
 for i in times:
-    avg_first_times.append(mean(i[::2]))
-    avg_second_times.append(mean(i[1::2]))
+    avg_first_times.append(med(i[::2]))
+    avg_second_times.append(med(i[1::2]))
 
 
 print avg_first_times
@@ -22,4 +26,4 @@ print avg_second_times
 
 plt.scatter(range(32), avg_first_times)
 plt.scatter(range(32), avg_second_times)
-plt.show()
+plt.savefig("int_plot.png")
