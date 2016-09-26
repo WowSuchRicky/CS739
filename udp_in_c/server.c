@@ -7,7 +7,7 @@
 #include <string.h>
 #include "udp_lib.h"
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 2000
 #define SERVER_SOCKET 10000
 
 // What do we need?

@@ -41,7 +41,7 @@ int udp_open(int port) {
 }
 
 int udp_write(int sockfd, struct sockaddr_in* dest, char* buffer, int buffer_len) {
-  return sendto(sockfd, buffer, buffer_len, 0, (struct sockaddr*)dest, 
+  return sendto(sockfd, buffer, buffer_len, MSG_DONTWAIT, (struct sockaddr*)dest, 
 		sizeof(struct sockaddr_in));
 }
 
@@ -50,7 +50,7 @@ int udp_read(int sockfd, struct sockaddr_in* addr, char* buffer, int buffer_len)
   int addrLen = sizeof(struct sockaddr_in);
   return recvfrom(sockfd, 
 		  buffer, buffer_len, 
-		  MSG_DONTWAIT,      // non-blocking read (change to 0 for blocking)
+		  MSG_DONTWAIT, 
 		  (struct sockaddr*)addr, 
 		  (socklen_t*)&addrLen);
 }
@@ -99,7 +99,6 @@ int udp_write_reliable(int sockfd, struct sockaddr_in* dest, char* buffer, int b
 
   // repeat send attempt every 'timeout' seconds until receive ack
   while (!ack_rec) {
-    printf("Attempting send.\n");
     rc = udp_write(sockfd, dest, buffer, buffer_len);
 
     // repeatedly check for acknowledgment until timoeut    
