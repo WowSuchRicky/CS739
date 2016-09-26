@@ -30,10 +30,10 @@ int main(int argc, char *argv[]) {
 
 
     /* Begin sum() call on the server */
-    double num_nums = atof(argv[2]); // How many numbers to send
+    long int num_nums = atof(argv[2]); // How many numbers to send
     cout << "Summing:  " << endl;
     vector<long int> nums_vec(num_nums);
-    for (double i = 0; i < num_nums; i++){
+    for (long int i = 0; i < num_nums; i++){
       nums_vec.push_back(i);
     }
 
