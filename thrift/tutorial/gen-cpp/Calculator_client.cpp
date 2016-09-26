@@ -1,4 +1,6 @@
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/transport/TSocket.h>
@@ -14,8 +16,10 @@ using namespace apache::thrift::transport;
 using namespace tutorial;
 using namespace shared;
 
-int main() {
-  boost::shared_ptr<TTransport> socket(new TSocket("localhost", 9090));
+int main(int argc, char *argv[]) {
+  std::string server = argv[1];
+
+  boost::shared_ptr<TTransport> socket(new TSocket(server, 9090));
   boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
   boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
   CalculatorClient client(protocol);
@@ -26,9 +30,13 @@ int main() {
 
 
     /* Begin sum() call on the server */
+    double num_nums = atof(argv[2]); // How many numbers to send
     cout << "Summing:  " << endl;
-    const long int nums[15] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    const vector<long int> nums_vec(nums, nums + sizeof(nums) / sizeof(nums[0]) );
+    vector<long int> nums_vec(num_nums);
+    for (double i = 0; i < num_nums; i++){
+      nums_vec.push_back(i);
+    }
+
     client.sum(nums_vec);
     
 
