@@ -13,12 +13,13 @@ for i in range(32):
 avg_first_times = []
 avg_second_times = []
 for i in times:
-    avg_first_times.append(mean(i[0:len(i):2]))
-    avg_second_times.append(mean(i[1:len(i):2]))
+    avg_first_times.append(mean(i[::2]))
+    avg_second_times.append(mean(i[1::2]))
 
 
 print avg_first_times
 print avg_second_times
 
 plt.scatter(range(32), avg_first_times)
+plt.scatter(range(32), avg_second_times)
 plt.show()
