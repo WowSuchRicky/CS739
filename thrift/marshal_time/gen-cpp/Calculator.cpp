@@ -210,7 +210,6 @@ Calculator_int_time_pargs::~Calculator_int_time_pargs() throw() {
 
 
 uint32_t Calculator_int_time_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
-  std::cout << "Start Calculator_int_time_pargs::write" << std::endl;
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_int_time_pargs");
@@ -221,7 +220,7 @@ uint32_t Calculator_int_time_pargs::write(::apache::thrift::protocol::TProtocol*
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
-  std::cout << "End Calculator_int_time_pargs::write" << std::endl;
+
   return xfer;
 }
 
@@ -399,7 +398,6 @@ Calculator_dbl_time_pargs::~Calculator_dbl_time_pargs() throw() {
 
 
 uint32_t Calculator_dbl_time_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
-  std::cout << "Start Calculator_dbl_time_pargs::write" << std::endl;
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_dbl_time_pargs");
@@ -410,7 +408,6 @@ uint32_t Calculator_dbl_time_pargs::write(::apache::thrift::protocol::TProtocol*
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
-  std::cout << "End Calculator_dbl_time_pargs::write" << std::endl;
   return xfer;
 }
 
@@ -588,7 +585,6 @@ Calculator_str_time_pargs::~Calculator_str_time_pargs() throw() {
 
 
 uint32_t Calculator_str_time_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
-  std::cout << "Start Calculator_str_time_pargs::write" << std::endl;
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_str_time_pargs");
@@ -599,7 +595,6 @@ uint32_t Calculator_str_time_pargs::write(::apache::thrift::protocol::TProtocol*
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
-  std::cout << "End Calculator_str_time_pargs::write" << std::endl;
   return xfer;
 }
 
@@ -777,7 +772,6 @@ Calculator_bla_time_pargs::~Calculator_bla_time_pargs() throw() {
 
 
 uint32_t Calculator_bla_time_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
-  std::cout << "Start Calculator_bla_time_pargs::write" << std::endl;
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_bla_time_pargs");
@@ -788,7 +782,6 @@ uint32_t Calculator_bla_time_pargs::write(::apache::thrift::protocol::TProtocol*
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
-  std::cout << "End Calculator_bla_time_pargs::write" << std::endl;
   return xfer;
 }
 
@@ -1246,7 +1239,18 @@ void CalculatorClient::send_int_time(const int32_t num1)
 
   Calculator_int_time_pargs args;
   args.num1 = &num1;
+
+  // Start timer
+  int dt;
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
+
   args.write(oprot_);
+
+  // End timer
+  clock_gettime(CLOCK_REALTIME, &end);
+  dt = 1000000000*(end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+  std::cout << dt << std::endl;
 
   oprot_->writeMessageEnd();
   oprot_->getTransport()->writeEnd();
@@ -1304,7 +1308,19 @@ void CalculatorClient::send_dbl_time(const double num1)
 
   Calculator_dbl_time_pargs args;
   args.num1 = &num1;
+
+  // Start timer
+  int dt;
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
+
   args.write(oprot_);
+
+  // End timer
+  clock_gettime(CLOCK_REALTIME, &end);
+  dt = 1000000000*(end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+  std::cout << dt << std::endl;
+
 
   oprot_->writeMessageEnd();
   oprot_->getTransport()->writeEnd();
@@ -1362,7 +1378,18 @@ void CalculatorClient::send_str_time(const std::string& str1)
 
   Calculator_str_time_pargs args;
   args.str1 = &str1;
+
+  // Start timer
+  int dt;
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
+
   args.write(oprot_);
+
+  // End timer
+  clock_gettime(CLOCK_REALTIME, &end);
+  dt = 1000000000*(end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+  std::cout << dt << std::endl;
 
   oprot_->writeMessageEnd();
   oprot_->getTransport()->writeEnd();
@@ -1420,7 +1447,18 @@ void CalculatorClient::send_bla_time(const Blah& b1)
 
   Calculator_bla_time_pargs args;
   args.b1 = &b1;
+
+  // Start timer
+  int dt;
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
+
   args.write(oprot_);
+
+  // End timer
+  clock_gettime(CLOCK_REALTIME, &end);
+  dt = 1000000000*(end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+  std::cout << dt << std::endl;
 
   oprot_->writeMessageEnd();
   oprot_->getTransport()->writeEnd();
@@ -2268,7 +2306,18 @@ int32_t CalculatorConcurrentClient::send_bla_time(const Blah& b1)
 
   Calculator_bla_time_pargs args;
   args.b1 = &b1;
+
+  // Start timer
+  int dt;
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
+
   args.write(oprot_);
+
+  // End timer
+  clock_gettime(CLOCK_REALTIME, &end);
+  dt = 1000000000*(end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+  std::cout << dt << std::endl;
 
   oprot_->writeMessageEnd();
   oprot_->getTransport()->writeEnd();

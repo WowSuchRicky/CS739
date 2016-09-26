@@ -32,24 +32,26 @@ int main(int argc, char** argv) {
     if (mode == 0) {
         int num = atoi(argv[3]);
         for (i = 0; i < n; i++)  {
-            cout << "int time = " << client.int_time(num) << endl;
+            client.int_time(num);
         }
     } else if (mode == 1) {
         double d = std::stod(argv[3], &sz);
         for (i = 0; i < n; i++) {
-            cout << "dbl time = " << client.dbl_time(d) << endl;
+            client.dbl_time(d);
         }
     } else if (mode == 2) {
         int l = atoi(argv[3]);
         std::string str(l, 'a');
         for (i = 0; i < n; i++) {
-            cout << "str time = " << client.str_time(str) << endl;
+            client.str_time(str);
         }
     } else {
         Blah b = Blah();
         b.num1 = atoi(argv[3]);
         b.num2 = std::stod(argv[4], &sz);
-        cout << "bla time = " << client.bla_time(b) << endl;
+        for (i = 0; i < n; i++) {
+            client.bla_time(b);
+        }
     }
     transport->close();
   } catch (TException& tx) {
