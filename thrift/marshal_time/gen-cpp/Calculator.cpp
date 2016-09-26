@@ -5,6 +5,7 @@
  *  @generated
  */
 #include "Calculator.h"
+#include <iostream>
 
 namespace tutorial {
 
@@ -209,6 +210,7 @@ Calculator_int_time_pargs::~Calculator_int_time_pargs() throw() {
 
 
 uint32_t Calculator_int_time_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  std::cout << "Start Calculator_int_time_pargs::write" << std::endl;
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_int_time_pargs");
@@ -219,6 +221,7 @@ uint32_t Calculator_int_time_pargs::write(::apache::thrift::protocol::TProtocol*
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
+  std::cout << "End Calculator_int_time_pargs::write" << std::endl;
   return xfer;
 }
 
@@ -396,6 +399,7 @@ Calculator_dbl_time_pargs::~Calculator_dbl_time_pargs() throw() {
 
 
 uint32_t Calculator_dbl_time_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  std::cout << "Start Calculator_dbl_time_pargs::write" << std::endl;
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_dbl_time_pargs");
@@ -406,6 +410,7 @@ uint32_t Calculator_dbl_time_pargs::write(::apache::thrift::protocol::TProtocol*
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
+  std::cout << "End Calculator_dbl_time_pargs::write" << std::endl;
   return xfer;
 }
 
@@ -583,6 +588,7 @@ Calculator_str_time_pargs::~Calculator_str_time_pargs() throw() {
 
 
 uint32_t Calculator_str_time_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  std::cout << "Start Calculator_str_time_pargs::write" << std::endl;
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_str_time_pargs");
@@ -593,6 +599,7 @@ uint32_t Calculator_str_time_pargs::write(::apache::thrift::protocol::TProtocol*
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
+  std::cout << "End Calculator_str_time_pargs::write" << std::endl;
   return xfer;
 }
 
@@ -770,6 +777,7 @@ Calculator_bla_time_pargs::~Calculator_bla_time_pargs() throw() {
 
 
 uint32_t Calculator_bla_time_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+  std::cout << "Start Calculator_bla_time_pargs::write" << std::endl;
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_bla_time_pargs");
@@ -780,6 +788,7 @@ uint32_t Calculator_bla_time_pargs::write(::apache::thrift::protocol::TProtocol*
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
+  std::cout << "End Calculator_bla_time_pargs::write" << std::endl;
   return xfer;
 }
 
