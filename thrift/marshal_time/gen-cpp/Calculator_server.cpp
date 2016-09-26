@@ -52,21 +52,25 @@ public:
 
   void ping() { cout << "ping()" << endl; }
 
-  int32_t add(const int32_t n1, const int32_t n2) {
-    cout << "add(" << n1 << ", " << n2 << ")" << endl;
-    return n1 + n2;
+  int32_t int_time(const int32_t n1) {
+    cout << "int_time(" << n1 << ")" << endl;
+    return 1;
   }
 
-
-  void sum(const std::vector<int64_t> & nums) {
-    // Your implementation goes here
-    unsigned long long sum = 0;
-    for(int i = 0; i < nums.size(); i++){
-      sum += nums[i];
-    }
-    printf("sum: %llu\n", sum);
+  int32_t dbl_time(const double n1) {
+    cout << "dbl_time(" << n1 << ")" << endl;
+    return 1;
   }
 
+  int32_t str_time(const std::string& n1) {
+    cout << "str_time(" << n1 << ")" << endl;
+    return 1;
+  }
+
+  int32_t bla_time(const Blah& n1) {
+    cout << "bla_time(" << n1 << ")" << endl;
+    return 1;
+  }
 
   int32_t calculate(const int32_t logid, const Work& work) {
     cout << "calculate(" << logid << ", " << work << ")" << endl;

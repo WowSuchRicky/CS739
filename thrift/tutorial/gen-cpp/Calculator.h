@@ -34,6 +34,8 @@ class CalculatorIf : virtual public  ::shared::SharedServiceIf {
   virtual int32_t calculate(const int32_t logid, const Work& w) = 0;
   virtual void sum(const std::vector<int64_t> & nums) = 0;
 
+
+
   /**
    * This method has a oneway modifier. That means the client only makes
    * a request and does not listen for any response at all. Oneway methods
@@ -80,9 +82,12 @@ class CalculatorNull : virtual public CalculatorIf , virtual public  ::shared::S
     int32_t _return = 0;
     return _return;
   }
+
   void sum(const std::vector<int64_t> & /* nums */) {
     return;
   }
+
+
   void zip() {
     return;
   }
@@ -392,6 +397,7 @@ class Calculator_calculate_presult {
 
 };
 
+
 typedef struct _Calculator_sum_args__isset {
   _Calculator_sum_args__isset() : nums(false) {}
   bool nums :1;
@@ -479,6 +485,7 @@ class Calculator_sum_presult {
 };
 
 
+
 class Calculator_zip_args {
  public:
 
@@ -535,9 +542,11 @@ class CalculatorClient : virtual public CalculatorIf, public  ::shared::SharedSe
   int32_t calculate(const int32_t logid, const Work& w);
   void send_calculate(const int32_t logid, const Work& w);
   int32_t recv_calculate();
+
   void sum(const std::vector<int64_t> & nums);
   void send_sum(const std::vector<int64_t> & nums);
   void recv_sum();
+
   void zip();
   void send_zip();
 };
@@ -553,7 +562,10 @@ class CalculatorProcessor : public  ::shared::SharedServiceProcessor {
   void process_ping(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_add(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_calculate(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+
   void process_sum(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+
+
   void process_zip(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
  public:
   CalculatorProcessor(boost::shared_ptr<CalculatorIf> iface) :
@@ -562,7 +574,10 @@ class CalculatorProcessor : public  ::shared::SharedServiceProcessor {
     processMap_["ping"] = &CalculatorProcessor::process_ping;
     processMap_["add"] = &CalculatorProcessor::process_add;
     processMap_["calculate"] = &CalculatorProcessor::process_calculate;
+
     processMap_["sum"] = &CalculatorProcessor::process_sum;
+
+
     processMap_["zip"] = &CalculatorProcessor::process_zip;
   }
 
@@ -624,6 +639,7 @@ class CalculatorMultiface : virtual public CalculatorIf, public  ::shared::Share
     return ifaces_[i]->calculate(logid, w);
   }
 
+
   void sum(const std::vector<int64_t> & nums) {
     size_t sz = ifaces_.size();
     size_t i = 0;
@@ -632,6 +648,7 @@ class CalculatorMultiface : virtual public CalculatorIf, public  ::shared::Share
     }
     ifaces_[i]->sum(nums);
   }
+
 
   void zip() {
     size_t sz = ifaces_.size();

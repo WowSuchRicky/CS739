@@ -5,6 +5,8 @@
  *  @generated
  */
 #include "Calculator.h"
+#include <iostream>
+
 
 namespace tutorial {
 
@@ -150,6 +152,8 @@ Calculator_add_args::~Calculator_add_args() throw() {
 
 uint32_t Calculator_add_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
+
+  std::cout << "Calculator_add_args::read Start" << std::endl;
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
   uint32_t xfer = 0;
   std::string fname;
@@ -194,10 +198,15 @@ uint32_t Calculator_add_args::read(::apache::thrift::protocol::TProtocol* iprot)
 
   xfer += iprot->readStructEnd();
 
+  std::cout << "xfer: " << xfer << std::endl;
+
   return xfer;
 }
 
 uint32_t Calculator_add_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+
+  std::cout << "Calculator_add_args::write Start\n";
+
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_add_args");
@@ -212,6 +221,9 @@ uint32_t Calculator_add_args::write(::apache::thrift::protocol::TProtocol* oprot
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
+
+  std::cout << "Calculator_add_args::write End\n";
+
   return xfer;
 }
 
@@ -221,6 +233,11 @@ Calculator_add_pargs::~Calculator_add_pargs() throw() {
 
 
 uint32_t Calculator_add_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+
+  std::cout << "Calculator_add_pargs::write Start\n";
+  std::cout << "*(this->num1): " << *(this->num1) << std::endl;
+  std::cout << "*(this->num2): " << *(this->num2) << std::endl;
+
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("Calculator_add_pargs");
@@ -235,6 +252,11 @@ uint32_t Calculator_add_pargs::write(::apache::thrift::protocol::TProtocol* opro
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
+
+
+  std::cout << "xfer: " << xfer << std::endl;
+  std::cout << "Calculator_add_pargs::write End\n";
+
   return xfer;
 }
 
@@ -570,6 +592,7 @@ uint32_t Calculator_calculate_presult::read(::apache::thrift::protocol::TProtoco
 }
 
 
+
 Calculator_sum_args::~Calculator_sum_args() throw() {
 }
 
@@ -752,6 +775,7 @@ uint32_t Calculator_sum_presult::read(::apache::thrift::protocol::TProtocol* ipr
 
   return xfer;
 }
+
 
 
 Calculator_zip_args::~Calculator_zip_args() throw() {
@@ -984,6 +1008,7 @@ int32_t CalculatorClient::recv_calculate()
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "calculate failed: unknown result");
 }
 
+
 void CalculatorClient::sum(const std::vector<int64_t> & nums)
 {
   send_sum(nums);
@@ -1036,6 +1061,7 @@ void CalculatorClient::recv_sum()
 
   return;
 }
+
 
 void CalculatorClient::zip()
 {
@@ -1229,6 +1255,7 @@ void CalculatorProcessor::process_calculate(int32_t seqid, ::apache::thrift::pro
   }
 }
 
+
 void CalculatorProcessor::process_sum(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext)
 {
   void* ctx = NULL;
@@ -1281,6 +1308,7 @@ void CalculatorProcessor::process_sum(int32_t seqid, ::apache::thrift::protocol:
     this->eventHandler_->postWrite(ctx, "Calculator.sum", bytes);
   }
 }
+
 
 void CalculatorProcessor::process_zip(int32_t, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol*, void* callContext)
 {
@@ -1577,6 +1605,7 @@ int32_t CalculatorConcurrentClient::recv_calculate(const int32_t seqid)
   } // end while(true)
 }
 
+
 void CalculatorConcurrentClient::sum(const std::vector<int64_t> & nums)
 {
   int32_t seqid = send_sum(nums);
@@ -1654,6 +1683,7 @@ void CalculatorConcurrentClient::recv_sum(const int32_t seqid)
     this->sync_.waitForWork(seqid);
   } // end while(true)
 }
+
 
 void CalculatorConcurrentClient::zip()
 {

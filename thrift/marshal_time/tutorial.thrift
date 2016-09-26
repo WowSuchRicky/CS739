@@ -110,6 +110,11 @@ struct Work {
   4: optional string comment,
 }
 
+struct Blah {
+  1: i32 num1,
+  2: double num2,
+}
+
 /**
  * Structs can also be exceptions, if they are nasty.
  */
@@ -133,7 +138,10 @@ service Calculator extends shared.SharedService {
 
    void ping(),
 
-   i32 add(1:i32 num1, 2:i32 num2),
+   i32 int_time(1:i32 num1),
+   i32 dbl_time(1:double num1),
+   i32 str_time(1:string str1),
+   i32 bla_time(1:Blah b1),
 
    i32 calculate(1:i32 logid, 2:Work w) throws (1:InvalidOperation ouch),
 

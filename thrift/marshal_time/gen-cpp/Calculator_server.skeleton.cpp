@@ -33,19 +33,29 @@ class CalculatorHandler : virtual public CalculatorIf {
     printf("ping\n");
   }
 
-  int32_t add(const int32_t num1, const int32_t num2) {
+  int32_t int_time(const int32_t num1) {
     // Your implementation goes here
-    printf("add\n");
+    printf("int_time\n");
+  }
+
+  int32_t dbl_time(const double num1) {
+    // Your implementation goes here
+    printf("dbl_time\n");
+  }
+
+  int32_t str_time(const std::string& str1) {
+    // Your implementation goes here
+    printf("str_time\n");
+  }
+
+  int32_t bla_time(const Blah& b1) {
+    // Your implementation goes here
+    printf("bla_time\n");
   }
 
   int32_t calculate(const int32_t logid, const Work& w) {
     // Your implementation goes here
     printf("calculate\n");
-  }
-
-  void sum(const std::vector<int64_t> & nums) {
-    // Your implementation goes here
-    printf("sum\n");
   }
 
   /**

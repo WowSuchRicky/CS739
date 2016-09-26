@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
   n = atoi(argv[1]);
 
   std::string::size_type sz;
-  int user = std::stod(argv[2], &sz);
+  double user = std::stod(argv[2], &sz);
 
   for (i = 0; i < n; i++) {
       std::string reply = greeter.SayHello(user);
