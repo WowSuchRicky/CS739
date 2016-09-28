@@ -54,8 +54,10 @@ int main(int argc, char *argv[]) {
     total_time_ns = time.tv_nsec - start_time_ns;
     total_time_s = time.tv_sec - start_time_s;
     
-    printf("sent: %lu\n", nums_vec.size() * sizeof(long int) );
-    printf("%d sec, %llu ns\n", total_time_s, total_time_ns);
+    unsigned long long dt = 1000000000* (time.tv_sec - start_time_s) + (time.tv_nsec - start_time_ns);
+    
+    //printf("sent: %lu bytes\n", nums_vec.size() * sizeof(long int) );
+    printf("%lu,%llu\n", nums_vec.size()*sizeof(long int), dt);
 
 
     /* End time */ 
