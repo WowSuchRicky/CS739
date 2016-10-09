@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package nfs;
+
+// File handle type, need inode #, filesystem & generation #.
+message FileHandle {
+    int32 inode = 1;
+    int32 fsnum = 2;
+    int32 genum = 3;
+}
+
+message Attribute {
+    // TODO: figure out what all goes here!
+    // I'm guessing mostly info like you get from stat?
+}
+
+
+// Hacky solution to multiple parameter, just follow convention: MethodNameArgs
+message LookupArgs {
+    FileHandle dirfh = 1;
+    string name = 2;
+}
+
+// Hacky solution to multiple retval, just follow convention: MethodNameReturn
+message LookupReturn {
+    FileHandle fh = 1;
+    Attribute attr = 2;
+}
+
+message CreateArgs {
+    FileHandle dirfh = 1;
+    string name = 2;
+    Attribute attr = 3;
+}
+
+message CreateReturn {
+    FileHandle newfh = 1;
+    Attribute attr = 2;
+}
+
+message RemoveArgs {
+    FileHandle dirfh = 1;
+    string name = 2;
+}
+
+message RemoveReturn {
+    int32 status = 1; // TODO: Double check if that's right type
+}
+
+/*
+ * For now, just focusing on basic file & fs ops, can add set/get attr's later!
+ */
+
+message ReadArgs {
+    FileHandle fh = 1;
+    int32 offset = 2;
+    int32 count = 3;
+}
+
+message ReadReturn {
+    Attribute attr = 1;
+    bytes data = 2;
+}
+
+message WriteArgs {
+    FileHandle fh = 1;
+    int32 offset = 2;
+    int32 count = 3;
+    bytes data = 4;
+}
+
+// Yes, even for single retval's, follow convention for consistency
+message WriteReturn {
+    Attribute attr = 1; 
+}
+
+/*
+ * Here we can add more functionality later, we have a good enough start for
+ * now.
+ */
+ 
+service NFS {
+    // No null call for now (not sure if needed since grpc is smart itself!)
+    rpc lookup(LookupArgs) returns (LookupReturn) {}
+    rpc create(CreateArgs) returns (CreateReturn) {}
+    rpc remove(RemoveArgs) returns (RemoveReturn) {}
+    rpc read(ReadArgs) returns (ReadReturn) {}
+    rpc write(WriteArgs) returns (WriteReturn) {}
+}
