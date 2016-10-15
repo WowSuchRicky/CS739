@@ -1,1 +1,0 @@
-Measurements taken with -O3 gcc optimizations and with royal-06 as client and betelgeuse.cs.wisc.edu as server (for some reason, royal-05 was unable to bind after previous measurements, hence the machine switch)
