@@ -36,19 +36,19 @@ package main
 import (
 	"log"
 	"os"
+	"strconv"
 
+	pb "../protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	pb "../protos"
 )
 
 const (
-	address     = "localhost:50051"
-	defaultName = "world"
+	address = "localhost:50051"
 )
 
 func main() {
-	// Set up a connection to the server.
+	// Set up a connection to the server. (taken from helloworld)
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -56,25 +56,106 @@ func main() {
 	defer conn.Close()
 	c := pb.NewNFSClient(conn)
 
-	// Contact the server and print out its response.
-	name := defaultName
-	if len(os.Args) > 1 {
-		name = os.Args[1]
+	if len(os.Args) < 2 {
+		log.Printf("lookup/create/remove/read/write [arg0] [arg1] [...]\n")
+		os.Exit(1)
 	}
 
-	log.Printf("Here!\n")
-	r, err := c.Lookup(context.Background(), &pb.LookupArgs{Dirfh: &pb.FileHandle{Inode: 42, Fsnum: 32, Genum: 22}, Name: name})
-	if err != nil {
-		log.Fatalf("could not greet: %v", err)
-	}
-	log.Printf("Filehandle Inode: %d, Fsnum: %d, Genum: %d\n", r.Fh.Inode, r.Fh.Fsnum, r.Fh.Genum);
+	call := os.Args[1]
+	if call == "lookup" {
+		if len(os.Args) < 6 {
+			log.Printf("lookup inode fsnum genum filename\n")
+			os.Exit(1)
+		}
+		inode, _ := strconv.ParseInt(os.Args[2], 0, 32)
+		fsnum, _ := strconv.ParseInt(os.Args[3], 0, 32)
+		genum, _ := strconv.ParseInt(os.Args[4], 0, 32)
+		name := os.Args[5]
 
-	/*
-	r, err := c.SayHello(context.Background(), &pb.HelloRequest{Name: name})
-	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		r, _ := c.Lookup(context.Background(),
+			&pb.LookupArgs{
+				Dirfh: &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Name:  name})
+
+		log.Printf("lookup response: %v\n", r)
+
+	} else if call == "create" {
+		if len(os.Args) < 6 {
+			log.Printf("create dir_inode dir_fsnum dir_genum filename [attribute, add later]\n")
+			os.Exit(1)
+		}
+		inode, _ := strconv.ParseInt(os.Args[2], 0, 32)
+		fsnum, _ := strconv.ParseInt(os.Args[3], 0, 32)
+		genum, _ := strconv.ParseInt(os.Args[4], 0, 32)
+		name := os.Args[5]
+
+		r, _ := c.Create(context.Background(),
+			&pb.CreateArgs{
+				Dirfh: &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Name:  name,
+				Attr:  &pb.Attribute{}})
+
+		log.Printf("create response: %v\n", r)
+
+	} else if call == "remove" {
+		if len(os.Args) < 6 {
+			log.Printf("remove dir_inode dir_fsnum dir_genum filename\n")
+			os.Exit(1)
+		}
+		inode, _ := strconv.ParseInt(os.Args[2], 0, 32)
+		fsnum, _ := strconv.ParseInt(os.Args[3], 0, 32)
+		genum, _ := strconv.ParseInt(os.Args[4], 0, 32)
+		name := os.Args[5]
+
+		r, _ := c.Remove(context.Background(),
+			&pb.RemoveArgs{
+				Dirfh: &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Name:  name})
+
+		log.Printf("remove response: %v", r)
+
+	} else if call == "read" {
+		if len(os.Args) < 7 {
+			log.Printf("read inode fsnum genum offset count\n")
+			os.Exit(1)
+		}
+		inode, _ := strconv.Atoi(os.Args[2])
+		fsnum, _ := strconv.Atoi(os.Args[3])
+		genum, _ := strconv.Atoi(os.Args[4])
+		offset, _ := strconv.Atoi(os.Args[5])
+		count, _ := strconv.Atoi(os.Args[6])
+
+		r, _ := c.Read(context.Background(),
+			&pb.ReadArgs{
+				Fh:     &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Offset: int32(offset),
+				Count:  int32(count)})
+
+		log.Printf("read response: %v\n", r)
+
+	} else if call == "write" {
+		if len(os.Args) < 7 {
+			log.Printf("write inode fsnum genum offset count\n")
+			os.Exit(1)
+		}
+		inode, _ := strconv.Atoi(os.Args[2])
+		fsnum, _ := strconv.Atoi(os.Args[3])
+		genum, _ := strconv.Atoi(os.Args[4])
+		offset, _ := strconv.Atoi(os.Args[5])
+		count, _ := strconv.Atoi(os.Args[6])
+		data := []byte{1, 2, 3}
+
+		r, _ := c.Write(context.Background(),
+			&pb.WriteArgs{
+				Fh:     &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Offset: int32(offset),
+				Count:  int32(count),
+				Data:   data})
+
+		log.Printf("write response: %v\n", r)
+
+	} else {
+		log.Printf("invalid args\n")
 	}
-	log.Printf("Greeting: %s", r.Message)
-*/
 
 }
