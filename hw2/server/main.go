@@ -34,12 +34,13 @@
 package main
 
 import (
+	nfs "./lib"
 	"log"
 	"net"
 
+	pb "../protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	pb "../protos"
 )
 
 const (
@@ -50,23 +51,23 @@ const (
 type server struct{}
 
 func (s *server) Lookup(ctx context.Context, in *pb.LookupArgs) (*pb.LookupReturn, error) {
-	return &pb.LookupReturn{Fh: &pb.FileHandle{Inode: 1, Fsnum: 2, Genum: 32}, Attr: &pb.Attribute{}}, nil
+	return nfs.LookupNFS(in)
 }
 
 func (s *server) Create(ctx context.Context, in *pb.CreateArgs) (*pb.CreateReturn, error) {
-	return &pb.CreateReturn{Newfh: &pb.FileHandle{Inode: 1, Fsnum: 2, Genum: 32}, Attr: &pb.Attribute{}}, nil
+	return nfs.CreateNFS(in)
 }
 
 func (s *server) Remove(ctx context.Context, in *pb.RemoveArgs) (*pb.RemoveReturn, error) {
-	return &pb.RemoveReturn{Status: 52}, nil
+	return nfs.RemoveNFS(in)
 }
 
 func (s *server) Read(ctx context.Context, in *pb.ReadArgs) (*pb.ReadReturn, error) {
-	return &pb.ReadReturn{Attr: &pb.Attribute{}, Data: []byte{1,2}}, nil
+	return nfs.ReadNFS(in)
 }
 
 func (s *server) Write(ctx context.Context, in *pb.WriteArgs) (*pb.WriteReturn, error) {
-	return &pb.WriteReturn{Attr: &pb.Attribute{}}, nil
+	return nfs.WriteNFS(in)
 }
 
 func main() {
