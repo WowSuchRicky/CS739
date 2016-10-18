@@ -34,11 +34,11 @@
 package main
 
 import (
-	nfs "./lib"
+	nfs "github.com/Ricky54326/CS739/hw2/server/lib"
 	"log"
 	"net"
 
-	pb "../protos"
+	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )

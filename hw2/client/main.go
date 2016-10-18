@@ -38,7 +38,7 @@ import (
 	"os"
 	"strconv"
 
-	pb "../protos"
+	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )

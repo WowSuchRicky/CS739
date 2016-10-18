@@ -1,7 +1,7 @@
 package nfs
 
 import (
-	pb "../../protos"
+	pb "github.com/Ricky54326/CS739/hw2/protos"
 )
 
 func RemoveNFS(in *pb.RemoveArgs) (*pb.RemoveReturn, error) {
