@@ -17,4 +17,5 @@ Things to do:
 6. Figure out how to use the given genum in each of the server-side calls to
    ensure correctness
 7. Figure out how to ensure idempotency, or what design decisions we want to make
-7. Integrate client using FUSE
+   (this somewhat goes along with properly using err's in server side functions)
+8. Integrate client using FUSE
