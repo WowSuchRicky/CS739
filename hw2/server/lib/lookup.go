@@ -2,15 +2,22 @@ package nfs
 
 import (
 	pb "github.com/Ricky54326/CS739/hw2/protos"
+	"syscall"
 )
 
 func LookupNFS(in *pb.LookupArgs) (*pb.LookupReturn, error) {
-	// approach #1: directly use the fs of the server
-	// 1) change directory to input filehandle
-	// 2) use os.Stat to get the inode number for the named file
-	// 3) revert back to original directory
 
-	// problems
-	// - how would we handle gen nums? need to store separately? underlying file system doesn't necessarily this
-	return &pb.LookupReturn{Fh: &pb.FileHandle{Inode: 1, Fsnum: 2, Genum: 32}, Attr: &pb.Attribute{}}, nil
+	// 1) get path of directory using inode & concatenate it with file name
+	dir_path, _ := InumToPath(int(in.Dirfh.Inode))
+	full_path := dir_path + in.Name // TODO: do we need to add forward slash?
+
+	// 2) get inode & genum of that file
+	var f_info syscall.Stat_t
+	syscall.Stat(full_path, &f_info)
+	ret_inode := int32(f_info.Ino)
+	ret_genum := int32(1) // TODO: genum
+
+	// 5) TODO: get attributes
+
+	return &pb.LookupReturn{Fh: &pb.FileHandle{Inode: ret_inode, Genum: ret_genum}, Attr: &pb.Attribute{}}, nil
 }
