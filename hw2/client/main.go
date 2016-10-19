@@ -90,14 +90,22 @@ func main() {
 		log.Printf("lookup response: %v\n", r)
 
 	} else if call == "create" {
-		if len(os.Args) < 5 {
-			log.Printf("create dir_inode dir_genum filename [attribute, add later]\n")
-			os.Exit(1)
-		}
-		inode, _ := strconv.ParseInt(os.Args[2], 0, 32)
-		genum, _ := strconv.ParseInt(os.Args[3], 0, 32)
-		name := os.Args[4]
+		var inode int64
+		var genum int64
+		var name string
 
+		inode = 1052236
+		genum = 0
+		name = "test_new.txt"
+
+		if len(os.Args) < 5 {
+			//log.Printf("create dir_inode dir_genum filename [attribute, add later]\n")
+			//os.Exit(1)
+		} else {
+			inode, _ = strconv.ParseInt(os.Args[2], 0, 32)
+			genum, _ = strconv.ParseInt(os.Args[3], 0, 32)
+			name = os.Args[4]
+		}
 		r, _ := c.Create(context.Background(),
 			&pb.CreateArgs{
 				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
