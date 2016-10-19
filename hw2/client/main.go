@@ -119,8 +119,8 @@ func main() {
 			log.Printf("remove dir_inode dir_genum filename\n")
 			os.Exit(1)
 		}
-		inode, _ := strconv.ParseInt(os.Args[2], 0, 32)
-		genum, _ := strconv.ParseInt(os.Args[3], 0, 32)
+		inode, _ := strconv.ParseInt(os.Args[2], 0, 64)
+		genum, _ := strconv.ParseInt(os.Args[3], 0, 64)
 		name := os.Args[4]
 
 		r, _ := c.Remove(context.Background(),
@@ -131,20 +131,31 @@ func main() {
 		log.Printf("remove response: %v", r)
 
 	} else if call == "read" {
+		var inode int64
+		var genum int64
+		var offset int64
+		var count int64
+
+		inode = 1056452
+		genum = 0
+		offset = 5
+		count = 10
+
 		if len(os.Args) < 6 {
-			log.Printf("read inode genum offset count\n")
-			os.Exit(1)
+			//log.Printf("read inode genum offset count\n")
+			//os.Exit(1)
+		} else {
+			inode, _ = strconv.ParseInt(os.Args[2], 0, 64)
+			genum, _ = strconv.ParseInt(os.Args[3], 0, 64)
+			offset, _ = strconv.ParseInt(os.Args[4], 0, 64)
+			count, _ = strconv.ParseInt(os.Args[5], 0, 64)
 		}
-		inode, _ := strconv.Atoi(os.Args[2])
-		genum, _ := strconv.Atoi(os.Args[3])
-		offset, _ := strconv.Atoi(os.Args[4])
-		count, _ := strconv.Atoi(os.Args[5])
 
 		r, _ := c.Read(context.Background(),
 			&pb.ReadArgs{
 				Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
-				Offset: int32(offset),
-				Count:  int32(count)})
+				Offset: int64(offset),
+				Count:  int64(count)})
 
 		log.Printf("read response: %v\n", r)
 
@@ -162,8 +173,8 @@ func main() {
 		r, _ := c.Write(context.Background(),
 			&pb.WriteArgs{
 				Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
-				Offset: int32(offset),
-				Count:  int32(count),
+				Offset: int64(offset),
+				Count:  int64(count),
 				Data:   data})
 
 		log.Printf("write response: %v\n", r)
