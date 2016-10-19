@@ -19,7 +19,7 @@ func ReadNFS(in *pb.ReadArgs) (*pb.ReadReturn, error) {
 	// TODO: what do we do with genum?
 	// f_genum := in.Fh.Genum
 
-	// open that file to get file descriptor
+	// open that file to get file object for it (this isn't an fd)
 	f, err := os.Open(filepath)
 
 	// use fseek to go to offset position in the file

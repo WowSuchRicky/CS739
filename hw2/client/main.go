@@ -160,15 +160,27 @@ func main() {
 		log.Printf("read response: %v\n", r)
 
 	} else if call == "write" {
+		var inode int64
+		var genum int64
+		var offset int64
+		var count int64
+		var data []byte
+
+		inode = 1056452
+		genum = 0
+		offset = 5
+		count = 4
+		data = []byte{'a', 'b', 'c', 'd'}
+
 		if len(os.Args) < 6 {
-			log.Printf("write inode genum offset count\n")
-			os.Exit(1)
+			// log.Printf("write inode genum offset count\n")
+			// os.Exit(1)
+		} else {
+			inode, _ = strconv.ParseInt(os.Args[2], 0, 64)
+			genum, _ = strconv.ParseInt(os.Args[3], 0, 64)
+			offset, _ = strconv.ParseInt(os.Args[4], 0, 64)
+			count, _ = strconv.ParseInt(os.Args[5], 0, 64)
 		}
-		inode, _ := strconv.Atoi(os.Args[2])
-		genum, _ := strconv.Atoi(os.Args[3])
-		offset, _ := strconv.Atoi(os.Args[4])
-		count, _ := strconv.Atoi(os.Args[5])
-		data := []byte{1, 2, 3}
 
 		r, _ := c.Write(context.Background(),
 			&pb.WriteArgs{
