@@ -63,91 +63,96 @@ func main() {
 
 	call := os.Args[1]
 	if call == "lookup" {
-		if len(os.Args) < 6 {
-			log.Printf("lookup inode fsnum genum filename\n")
-			os.Exit(1)
+
+		var inode int64
+		var genum int64
+		var name string
+
+		inode = 97153927
+		genum = 0
+		name = "test.txt"
+
+		if len(os.Args) < 5 {
+			//log.Printf("lookup inode genum filename\n")
+			//os.Exit(1)
+		} else {
+			inode, _ = strconv.ParseInt(os.Args[2], 0, 32)
+			genum, _ = strconv.ParseInt(os.Args[3], 0, 32)
+			name = os.Args[4]
 		}
-		inode, _ := strconv.ParseInt(os.Args[2], 0, 32)
-		fsnum, _ := strconv.ParseInt(os.Args[3], 0, 32)
-		genum, _ := strconv.ParseInt(os.Args[4], 0, 32)
-		name := os.Args[5]
 
 		r, _ := c.Lookup(context.Background(),
 			&pb.LookupArgs{
-				Dirfh: &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Name:  name})
 
 		log.Printf("lookup response: %v\n", r)
 
 	} else if call == "create" {
-		if len(os.Args) < 6 {
-			log.Printf("create dir_inode dir_fsnum dir_genum filename [attribute, add later]\n")
+		if len(os.Args) < 5 {
+			log.Printf("create dir_inode dir_genum filename [attribute, add later]\n")
 			os.Exit(1)
 		}
 		inode, _ := strconv.ParseInt(os.Args[2], 0, 32)
-		fsnum, _ := strconv.ParseInt(os.Args[3], 0, 32)
-		genum, _ := strconv.ParseInt(os.Args[4], 0, 32)
-		name := os.Args[5]
+		genum, _ := strconv.ParseInt(os.Args[3], 0, 32)
+		name := os.Args[4]
 
 		r, _ := c.Create(context.Background(),
 			&pb.CreateArgs{
-				Dirfh: &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Name:  name,
 				Attr:  &pb.Attribute{}})
 
 		log.Printf("create response: %v\n", r)
 
 	} else if call == "remove" {
-		if len(os.Args) < 6 {
-			log.Printf("remove dir_inode dir_fsnum dir_genum filename\n")
+		if len(os.Args) < 5 {
+			log.Printf("remove dir_inode dir_genum filename\n")
 			os.Exit(1)
 		}
 		inode, _ := strconv.ParseInt(os.Args[2], 0, 32)
-		fsnum, _ := strconv.ParseInt(os.Args[3], 0, 32)
-		genum, _ := strconv.ParseInt(os.Args[4], 0, 32)
-		name := os.Args[5]
+		genum, _ := strconv.ParseInt(os.Args[3], 0, 32)
+		name := os.Args[4]
 
 		r, _ := c.Remove(context.Background(),
 			&pb.RemoveArgs{
-				Dirfh: &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Name:  name})
 
 		log.Printf("remove response: %v", r)
 
 	} else if call == "read" {
-		if len(os.Args) < 7 {
-			log.Printf("read inode fsnum genum offset count\n")
+		if len(os.Args) < 6 {
+			log.Printf("read inode genum offset count\n")
 			os.Exit(1)
 		}
 		inode, _ := strconv.Atoi(os.Args[2])
-		fsnum, _ := strconv.Atoi(os.Args[3])
-		genum, _ := strconv.Atoi(os.Args[4])
-		offset, _ := strconv.Atoi(os.Args[5])
-		count, _ := strconv.Atoi(os.Args[6])
+		genum, _ := strconv.Atoi(os.Args[3])
+		offset, _ := strconv.Atoi(os.Args[4])
+		count, _ := strconv.Atoi(os.Args[5])
 
 		r, _ := c.Read(context.Background(),
 			&pb.ReadArgs{
-				Fh:     &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Offset: int32(offset),
 				Count:  int32(count)})
 
 		log.Printf("read response: %v\n", r)
 
 	} else if call == "write" {
-		if len(os.Args) < 7 {
+		if len(os.Args) < 6 {
 			log.Printf("write inode fsnum genum offset count\n")
 			os.Exit(1)
 		}
 		inode, _ := strconv.Atoi(os.Args[2])
-		fsnum, _ := strconv.Atoi(os.Args[3])
-		genum, _ := strconv.Atoi(os.Args[4])
-		offset, _ := strconv.Atoi(os.Args[5])
-		count, _ := strconv.Atoi(os.Args[6])
+		genum, _ := strconv.Atoi(os.Args[3])
+		offset, _ := strconv.Atoi(os.Args[4])
+		count, _ := strconv.Atoi(os.Args[5])
 		data := []byte{1, 2, 3}
 
 		r, _ := c.Write(context.Background(),
 			&pb.WriteArgs{
-				Fh:     &pb.FileHandle{Inode: int32(inode), Fsnum: int32(fsnum), Genum: int32(genum)},
+				Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Offset: int32(offset),
 				Count:  int32(count),
 				Data:   data})

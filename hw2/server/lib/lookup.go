@@ -14,8 +14,8 @@ func LookupNFS(in *pb.LookupArgs) (*pb.LookupReturn, error) {
 	// 2) get inode & genum of that file
 	var f_info syscall.Stat_t
 	syscall.Stat(full_path, &f_info)
-	ret_inode := int32(f_info.Ino)
-	ret_genum := int32(1) // TODO: genum
+	ret_inode := f_info.Ino
+	ret_genum := uint64(1) // TODO: genum
 
 	// 5) TODO: get attributes
 

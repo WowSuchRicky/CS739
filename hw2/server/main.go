@@ -41,8 +41,6 @@ import (
 	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-
-	"fmt"
 )
 
 const (
@@ -75,7 +73,7 @@ func (s *server) Write(ctx context.Context, in *pb.WriteArgs) (*pb.WriteReturn, 
 func main() {
 
 	//path, _ := nfs.InumToPath(663418)
-	
+
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

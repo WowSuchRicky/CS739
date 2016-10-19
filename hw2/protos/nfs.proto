@@ -4,9 +4,8 @@ package nfs;
 
 // File handle type, need inode #, filesystem & generation #.
 message FileHandle {
-    int32 inode = 1;
-    int32 fsnum = 2;
-    int32 genum = 3;
+    uint64 inode = 1;
+    uint64 genum = 2;
 }
 
 message Attribute {
