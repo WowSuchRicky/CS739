@@ -7,15 +7,17 @@ import (
 
 func LookupNFS(in *pb.LookupArgs) (*pb.LookupReturn, error) {
 
-	// 1) get path of directory using inode & concatenate it with file name
+	// 1) get path of directory using it's inode & concatenate it with file name
 	dir_path, _ := InumToPath(int(in.Dirfh.Inode))
-	full_path := dir_path + in.Name // TODO: do we need to add forward slash?
+	full_path := dir_path + "/" + in.Name
 
-	// 2) get inode & genum of that file
+	// 2) get inode
 	var f_info syscall.Stat_t
 	syscall.Stat(full_path, &f_info)
 	ret_inode := f_info.Ino
-	ret_genum := uint64(1) // TODO: genum
+
+	// 3) TODO: get genum
+	ret_genum := uint64(1)
 
 	// 5) TODO: get attributes
 

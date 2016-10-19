@@ -64,11 +64,12 @@ func main() {
 	call := os.Args[1]
 	if call == "lookup" {
 
+		// this is some temporary crap for testing purpose
 		var inode int64
 		var genum int64
 		var name string
 
-		inode = 97153927
+		inode = 1052236
 		genum = 0
 		name = "test.txt"
 
@@ -141,7 +142,7 @@ func main() {
 
 	} else if call == "write" {
 		if len(os.Args) < 6 {
-			log.Printf("write inode fsnum genum offset count\n")
+			log.Printf("write inode genum offset count\n")
 			os.Exit(1)
 		}
 		inode, _ := strconv.Atoi(os.Args[2])

@@ -1,5 +1,4 @@
 /*
- *
  * Copyright 2015, Google Inc.
  * All rights reserved.
  *
@@ -71,9 +70,6 @@ func (s *server) Write(ctx context.Context, in *pb.WriteArgs) (*pb.WriteReturn, 
 }
 
 func main() {
-
-	//path, _ := nfs.InumToPath(663418)
-
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

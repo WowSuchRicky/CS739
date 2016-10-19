@@ -3,6 +3,7 @@ package nfs
 import (
 	"bytes"
 	"strconv"
+	"strings"
 	"os/exec"
 )
 
@@ -18,5 +19,5 @@ func InumToPath(inum int) (string, error) {
 	    return "", err
 	}
 	
-	return outb.String(), err
+	return strings.TrimSpace(outb.String()), err
 }
