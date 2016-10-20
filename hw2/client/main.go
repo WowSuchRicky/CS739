@@ -96,7 +96,7 @@ func main() {
 		var name string
 
 		inode = 1052236
-		genum = 0
+		genum = 2338734807
 		name = "test_new.txt"
 
 		if len(os.Args) < 5 {
