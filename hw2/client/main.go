@@ -149,7 +149,7 @@ func main() {
 		var count int64
 
 		inode = 1056452
-		genum = 0
+		genum = 2338748407
 		offset = 5
 		count = 10
 
