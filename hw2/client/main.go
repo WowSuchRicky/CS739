@@ -1,212 +1,122 @@
-/*
- *
- * Copyright 2015, Google Inc.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *     * Neither the name of Google Inc. nor the names of its
- * contributors may be used to endorse or promote products derived from
- * this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- */
-
+// Hellofs implements a simple "hello world" file system.
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"os"
-	"strconv"
 
 	pb "github.com/Ricky54326/CS739/hw2/protos"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
+	"bazil.org/fuse"
+	"bazil.org/fuse/fs"
+	_ "bazil.org/fuse/fs/fstestutil"
+	"golang.org/x/net/context"
 )
 
+
+// @TODO: Change
 const (
 	address = "localhost:50051"
 )
 
+
+func usage() {
+	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "  %s MOUNTPOINT\n", os.Args[0])
+	//flag.PrintDefaults()
+}
+
 func main() {
-	// Set up a connection to the server. (taken from helloworld)
+	flag.Usage = usage
+	flag.Parse()
+
+	if flag.NArg() != 1 {
+		usage()
+		os.Exit(2)
+	}
+	mountpoint := flag.Arg(0)
+
+
+	// GRPC Connection
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewNFSClient(conn)
+	conn_pb := pb.NewNFSClient(conn)
 
-	if len(os.Args) < 2 {
-		log.Printf("lookup/create/remove/read/write [arg0] [arg1] [...]\n")
-		os.Exit(1)
+
+	// Local FS mount at Arg(0)
+	c, err := fuse.Mount(
+		mountpoint,
+		fuse.FSName("helloworld"),
+		fuse.Subtype("hellofs"),
+		fuse.LocalVolume(),
+		fuse.VolumeName("Hello world!"),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+
+	err = fs.Serve(c, FS{})
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	call := os.Args[1]
-	if call == "lookup" {
-
-		// this is some temporary crap for testing purpose
-		var inode int64
-		var genum int64
-		var name string
-
-		inode = 1052236
-		genum = 2338734807
-		name = "test.txt"
-
-		if len(os.Args) < 5 {
-			//log.Printf("lookup inode genum filename\n")
-			//os.Exit(1)
-		} else {
-			inode, _ = strconv.ParseInt(os.Args[2], 0, 32)
-			genum, _ = strconv.ParseInt(os.Args[3], 0, 32)
-			name = os.Args[4]
-		}
-
-		r, err := c.Lookup(context.Background(),
-			&pb.LookupArgs{
-				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
-				Name:  name})
-
-		log.Printf("lookup response: %v\n", r)
-		log.Printf("Errors: %v\n", err)
-
-	} else if call == "create" {
-		var inode int64
-		var genum int64
-		var name string
-
-		inode = 1052236
-		genum = 2338734807
-		name = "test_new.txt"
-
-		if len(os.Args) < 5 {
-			//log.Printf("create dir_inode dir_genum filename [attribute, add later]\n")
-			//os.Exit(1)
-		} else {
-			inode, _ = strconv.ParseInt(os.Args[2], 0, 32)
-			genum, _ = strconv.ParseInt(os.Args[3], 0, 32)
-			name = os.Args[4]
-		}
-		r, err := c.Create(context.Background(),
-			&pb.CreateArgs{
-				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
-				Name:  name,
-				Attr:  &pb.Attribute{}})
-
-		log.Printf("create response: %v\n", r)
-		log.Printf("Errors: %v\n", err)
-
-	} else if call == "remove" {
-		var inode int64
-		var genum int64
-		var name string
-
-		inode = 1052236
-		genum = 2338734807
-		name = os.Args[2]
-
-		if len(os.Args) < 5 {
-			//log.Printf("remove dir_inode dir_genum filename\n")
-			//os.Exit(1)
-		} else {
-			inode, _ = strconv.ParseInt(os.Args[2], 0, 64)
-			genum, _ = strconv.ParseInt(os.Args[3], 0, 64)
-			name = os.Args[4]
-		}
-
-		r, err := c.Remove(context.Background(),
-			&pb.RemoveArgs{
-				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
-				Name:  name})
-
-		log.Printf("remove response: %v", r)
-		log.Printf("Errors: %v\n", err)
-
-	} else if call == "read" {
-		var inode int64
-		var genum int64
-		var offset int64
-		var count int64
-
-		inode = 1056452
-		genum = 2338748407
-		offset = 5
-		count = 10
-
-		if len(os.Args) < 6 {
-			//log.Printf("read inode genum offset count\n")
-			//os.Exit(1)
-		} else {
-			inode, _ = strconv.ParseInt(os.Args[2], 0, 64)
-			genum, _ = strconv.ParseInt(os.Args[3], 0, 64)
-			offset, _ = strconv.ParseInt(os.Args[4], 0, 64)
-			count, _ = strconv.ParseInt(os.Args[5], 0, 64)
-		}
-
-		r, err := c.Read(context.Background(),
-			&pb.ReadArgs{
-				Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
-				Offset: int64(offset),
-				Count:  int64(count)})
-
-		log.Printf("read response: %v\n", r)
-		log.Printf("Errors: %v\n", err)
-
-	} else if call == "write" {
-		var inode int64
-		var genum int64
-		var offset int64
-		var count int64
-		var data []byte
-
-		inode = 1056452
-		genum = 2338748407
-		offset = 5
-		count = 4
-		data = []byte{'a', 'e', 'c', 'd'}
-
-		if len(os.Args) < 6 {
-			// log.Printf("write inode genum offset count\n")
-			// os.Exit(1)
-		} else {
-			inode, _ = strconv.ParseInt(os.Args[2], 0, 64)
-			genum, _ = strconv.ParseInt(os.Args[3], 0, 64)
-			offset, _ = strconv.ParseInt(os.Args[4], 0, 64)
-			count, _ = strconv.ParseInt(os.Args[5], 0, 64)
-		}
-
-		r, err := c.Write(context.Background(),
-			&pb.WriteArgs{
-				Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
-				Offset: int64(offset),
-				Count:  int64(count),
-				Data:   data})
-
-		log.Printf("write response: %v\n", r)
-		log.Printf("Errors: %v\n", err)
-
-	} else {
-		log.Printf("invalid args\n")
+	// check if the mount process has an error to report
+	<-c.Ready
+	if err := c.MountError; err != nil {
+		log.Fatal(err)
 	}
+}
 
+// FS implements the hello world file system.
+type FS struct{}
+
+func (FS) Root() (fs.Node, error) {
+	return Dir{}, nil
+}
+
+// Dir implements both Node and Handle for the root directory.
+type Dir struct{}
+
+func (Dir) Attr(ctx context.Context, a *fuse.Attr) error {
+	a.Inode = 1
+	a.Mode = os.ModeDir | 0555
+	return nil
+}
+
+func (Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+	if name == "hello" {
+		return File{}, nil
+	}
+	return nil, fuse.ENOENT
+}
+
+var dirDirs = []fuse.Dirent{
+	{Inode: 2, Name: "hello", Type: fuse.DT_File},
+}
+
+func (Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	return dirDirs, nil
+}
+
+// File implements both Node and Handle for the hello file.
+type File struct{}
+
+const greeting = "hello, world\n"
+
+func (File) Attr(ctx context.Context, a *fuse.Attr) error {
+	a.Inode = 2
+	a.Mode = 0444
+	a.Size = uint64(len(greeting))
+	return nil
+}
+
+func (File) ReadAll(ctx context.Context) ([]byte, error) {
+	return []byte(greeting), nil
 }
