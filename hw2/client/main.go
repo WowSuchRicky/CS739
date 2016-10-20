@@ -70,7 +70,7 @@ func main() {
 		var name string
 
 		inode = 1052236
-		genum = 0
+		genum = 2338734807
 		name = "test.txt"
 
 		if len(os.Args) < 5 {
@@ -82,12 +82,13 @@ func main() {
 			name = os.Args[4]
 		}
 
-		r, _ := c.Lookup(context.Background(),
+		r, err := c.Lookup(context.Background(),
 			&pb.LookupArgs{
 				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Name:  name})
 
 		log.Printf("lookup response: %v\n", r)
+		log.Printf("Errors: %v\n", err)
 
 	} else if call == "create" {
 		var inode int64
@@ -106,29 +107,40 @@ func main() {
 			genum, _ = strconv.ParseInt(os.Args[3], 0, 32)
 			name = os.Args[4]
 		}
-		r, _ := c.Create(context.Background(),
+		r, err := c.Create(context.Background(),
 			&pb.CreateArgs{
 				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Name:  name,
 				Attr:  &pb.Attribute{}})
 
 		log.Printf("create response: %v\n", r)
+		log.Printf("Errors: %v\n", err)
 
 	} else if call == "remove" {
-		if len(os.Args) < 5 {
-			log.Printf("remove dir_inode dir_genum filename\n")
-			os.Exit(1)
-		}
-		inode, _ := strconv.ParseInt(os.Args[2], 0, 64)
-		genum, _ := strconv.ParseInt(os.Args[3], 0, 64)
-		name := os.Args[4]
+		var inode int64
+		var genum int64
+		var name string
 
-		r, _ := c.Remove(context.Background(),
+		inode = 1052236
+		genum = 2338734807
+		name = os.Args[2]
+
+		if len(os.Args) < 5 {
+			//log.Printf("remove dir_inode dir_genum filename\n")
+			//os.Exit(1)
+		} else {
+			inode, _ = strconv.ParseInt(os.Args[2], 0, 64)
+			genum, _ = strconv.ParseInt(os.Args[3], 0, 64)
+			name = os.Args[4]
+		}
+
+		r, err := c.Remove(context.Background(),
 			&pb.RemoveArgs{
 				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Name:  name})
 
 		log.Printf("remove response: %v", r)
+		log.Printf("Errors: %v\n", err)
 
 	} else if call == "read" {
 		var inode int64
@@ -151,13 +163,14 @@ func main() {
 			count, _ = strconv.ParseInt(os.Args[5], 0, 64)
 		}
 
-		r, _ := c.Read(context.Background(),
+		r, err := c.Read(context.Background(),
 			&pb.ReadArgs{
 				Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Offset: int64(offset),
 				Count:  int64(count)})
 
 		log.Printf("read response: %v\n", r)
+		log.Printf("Errors: %v\n", err)
 
 	} else if call == "write" {
 		var inode int64
@@ -167,10 +180,10 @@ func main() {
 		var data []byte
 
 		inode = 1056452
-		genum = 0
+		genum = 2338748407
 		offset = 5
 		count = 4
-		data = []byte{'a', 'b', 'c', 'd'}
+		data = []byte{'a', 'e', 'c', 'd'}
 
 		if len(os.Args) < 6 {
 			// log.Printf("write inode genum offset count\n")
@@ -182,7 +195,7 @@ func main() {
 			count, _ = strconv.ParseInt(os.Args[5], 0, 64)
 		}
 
-		r, _ := c.Write(context.Background(),
+		r, err := c.Write(context.Background(),
 			&pb.WriteArgs{
 				Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Offset: int64(offset),
@@ -190,6 +203,7 @@ func main() {
 				Data:   data})
 
 		log.Printf("write response: %v\n", r)
+		log.Printf("Errors: %v\n", err)
 
 	} else {
 		log.Printf("invalid args\n")

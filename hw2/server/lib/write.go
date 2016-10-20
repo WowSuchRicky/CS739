@@ -1,6 +1,8 @@
 package nfs
 
 import (
+	"errors"
+	"fmt"
 	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"os"
 )
@@ -11,12 +13,27 @@ func WriteNFS(in *pb.WriteArgs) (*pb.WriteReturn, error) {
 
 	// get path for the file
 	filepath, err := InumToPath(int(in.Fh.Inode))
+	if err != nil {
+		return &pb.WriteReturn{Attr: &pb.Attribute{}}, errors.New("inode not found")
+	}
 
-	// TODO: what do we do with genum?
-	// f_genum := in.Fh.Genum
+	// ensure genums match
+	fh_genum := in.Fh.Genum
+	fs_genum, err := PathToGen(filepath)
+	if err != nil {
+		fmt.Println("Genum of file not found, error.")
+		os.Exit(-1)
+	}
 
-	// open that file to get file object for it (this isn't an fd)
+	if fh_genum != fs_genum {
+		return &pb.WriteReturn{Attr: &pb.Attribute{}}, errors.New("genum mismatch")
+	}
+
+	// get file object for that file (not an fd)
 	f, err := os.OpenFile(filepath, os.O_WRONLY, 0)
+	if err != nil {
+		return &pb.WriteReturn{Attr: &pb.Attribute{}}, err
+	}
 
 	// write the data into it starting at in.Offset
 	data_to_write := in.Data[0:in.Count]
