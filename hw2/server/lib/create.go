@@ -9,8 +9,6 @@ import (
 )
 
 func CreateNFS(in *pb.CreateArgs) (*pb.CreateReturn, error) {
-
-	// get path of directory
 	dir_path, err := InumToPath(int(in.Dirfh.Inode))
 	new_file_path := dir_path + "/" + in.Name
 
