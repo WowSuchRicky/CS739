@@ -7,8 +7,8 @@ import (
 	"strconv"
 )
 
-func PathToGen(path string) (int, error) {
-	cmd := exec.Command("./generation", path)
+func PathToGen(path string) (uint64, error) {
+	cmd := exec.Command("./lib/generation", path)
 
 	var outb bytes.Buffer
 	cmd.Stdout = &outb
@@ -21,5 +21,5 @@ func PathToGen(path string) (int, error) {
 	}
 
 	out, err := strconv.Atoi(outb.String())
-	return out, err
+	return uint64(out), err
 }
