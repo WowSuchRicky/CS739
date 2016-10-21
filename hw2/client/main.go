@@ -29,6 +29,9 @@ func usage() {
 	//flag.PrintDefaults()
 }
 
+// Global vars for NFS
+var conn_pb pb.NFSClient
+
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -46,7 +49,7 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	conn_pb := pb.NewNFSClient(conn)
+	conn_pb = pb.NewNFSClient(conn)
 
 
 	// Local FS mount at Arg(0)
