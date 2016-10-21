@@ -11,6 +11,11 @@ message FileHandle {
 message Attribute {
     // TODO: figure out what all goes here!
     // I'm guessing mostly info like you get from stat?
+    uint64 uid = 1;
+    uint64 gid = 2;
+    uint64 size = 3;
+    uint64 access_time = 4;
+    uint64 modify_time = 5;
 }
 
 
