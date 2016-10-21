@@ -69,6 +69,10 @@ func (s *server) Write(ctx context.Context, in *pb.WriteArgs) (*pb.WriteReturn, 
 	return nfs.WriteNFS(in)
 }
 
+func (s *server) Readdir(ctx context.Context, in *pb.ReaddirArgs) (*pb.ReaddirReturn, error) {
+	return nfs.ReaddirNFS(in)
+}
+
 func (s *server) Root(ctx context.Context, in *pb.RootArgs) (*pb.RootReturn, error) {
 	return nfs.GetRootNFS(in)
 }

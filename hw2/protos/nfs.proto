@@ -9,9 +9,6 @@ message FileHandle {
 }
 
 message Attribute {
-    // TODO: figure out what all goes here!
-    // I'm guessing mostly info like you get from stat?
-
     uint32 mode = 1;
     uint32 uid = 2;
     uint32 gid = 3;
@@ -21,7 +18,7 @@ message Attribute {
     uint32 atime_nsec = 7;
     uint32 mtime_nsec = 8;
 
-    // these are in stat struct but not bazil attr
+    // these are in stat struct but not bazil attr, so we ignore for now
     /*
     uint64 dev = 1;
     uint64 ino = 2;
@@ -33,6 +30,12 @@ message Attribute {
     */
 }
 
+// nfs protocol describes using cookies (each entry links to the next),
+// but we can assume for now that it's unnecessary with gorpc
+message Dirent {
+    uint64 inode = 1;
+    string name = 2;
+}
 
 // Hacky solution to multiple parameter, just follow convention: MethodNameArgs
 message LookupArgs {
@@ -102,6 +105,17 @@ message WriteReturn {
     Attribute attr = 1; 
 }
 
+message ReaddirArgs {
+    FileHandle dirfh = 1;
+    uint64 count = 2;
+    // uint64 cookie = 3; // ignore cookies for now
+}
+
+message ReaddirReturn {
+    // directory entries
+    repeated Dirent entries = 1;
+}
+
 /*
  * Here we can add more functionality later, we have a good enough start for
  * now.
@@ -115,4 +129,5 @@ service NFS {
     rpc remove(RemoveArgs) returns (RemoveReturn) {}
     rpc read(ReadArgs) returns (ReadReturn) {}
     rpc write(WriteArgs) returns (WriteReturn) {}
+    rpc readdir(ReaddirArgs) returns (ReaddirReturn) {}
 }

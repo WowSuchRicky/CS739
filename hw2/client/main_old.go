@@ -218,6 +218,17 @@ func main() {
 		log.Printf("root response: %v\n", r)
 		log.Printf("Errors: %v\n", err)
 
+	} else if call == "readdir" {
+
+		inode := 1052236
+		genum := 2338734807
+
+		r, err := c.Readdir(context.Background(),
+			&pb.ReaddirArgs{
+				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)}})
+		log.Printf("readdir response: %v\n", r)
+		log.Printf("Errors: %v\n", err)
+
 	} else {
 		log.Printf("invalid args\n")
 	}
