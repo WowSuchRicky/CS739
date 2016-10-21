@@ -6,6 +6,7 @@ import (
 	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"io/ioutil"
 	"os"
+	"syscall"
 )
 
 // we're not using the syscalls directly here, so we're not dealing
@@ -48,7 +49,17 @@ func ReaddirNFS(in *pb.ReaddirArgs) (*pb.ReaddirReturn, error) {
 	nfs_entries = make([]*pb.Dirent, len(entries))
 
 	for i := 0; i < len(entries); i++ {
-		nfs_entries[i] = &pb.Dirent{Name: entries[i].Name(), Inode: 1}
+
+		// call stat on each entry because we must get inode and know whether the file is a directory or not
+		file_path := dir_path + "/" + entries[i].Name()
+		var f_info syscall.Stat_t
+		err = syscall.Stat(file_path, &f_info)
+		if err != nil {
+			fmt.Println("Stat failed on directory entry; fatal error")
+			os.Exit(-1)
+		}
+
+		nfs_entries[i] = &pb.Dirent{Name: entries[i].Name(), Inode: f_info.Ino, Mode: f_info.Mode}
 	}
 
 	return &pb.ReaddirReturn{Entries: nfs_entries}, nil

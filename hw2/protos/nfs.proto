@@ -32,9 +32,11 @@ message Attribute {
 
 // nfs protocol describes using cookies (each entry links to the next),
 // but we can assume for now that it's unnecessary with gorpc
+// model this after fuse.Dirent
 message Dirent {
     uint64 inode = 1;
     string name = 2;
+    uint32 mode = 3; // can use this to tell if it's a file or dir
 }
 
 // Hacky solution to multiple parameter, just follow convention: MethodNameArgs

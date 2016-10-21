@@ -61,9 +61,7 @@ func main() {
 	}
 	defer c.Close()
 
-	// call our NFS mount function to retrieve the filehandle of server's root
-	// we associate that file handle with the FS structure
-
+	// TODO: this is the path RELATIVE to server which we want to make available remotely
 	root_path_on_server := "test/"
 	root_ret, err := conn_pb.Root(context.Background(), &pb.RootArgs{Path: root_path_on_server})
 	nfs_fs := &FS{Fh: root_ret.Fh}
@@ -80,12 +78,11 @@ func main() {
 	}
 }
 
-// FS implements the hello world file system.
 type FS struct {
 	Fh *pb.FileHandle
 }
 
-var _ fs.FS = (*FS)(nil)
+// var _ fs.FS = (*FS)(nil)
 
 func (f *FS) Root() (fs.Node, error) {
 	fmt.Println("Root path: %v", f.Fh)
@@ -97,7 +94,7 @@ type Dir struct {
 	Fh *pb.FileHandle
 }
 
-var _ fs.Node = (*Dir)(nil)
+// var _ fs.Node = (*Dir)(nil)
 
 // TODO: attribute for directory
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
@@ -108,20 +105,19 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 
 // TODO: lookup for directory
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	/*	if name == "hello" {
-			return File{}, nil
-		}
-		return nil, fuse.ENOENT
-	*/
 
 	r, err := conn_pb.Lookup(context.Background(),
 		&pb.LookupArgs{
 			Dirfh: d.Fh,
 			Name:  name})
 
-	// TODO: we're assuming the result is a file, but it could be a dir, in which case
-	// we need to return a &Dir
-	if err == nil {
+	if err != nil {
+		// TODO: error
+	}
+
+	if ModeToBoolIfDir(r.Attr.Mode) {
+		return &Dir{Fh: r.Fh}, nil
+	} else {
 		return &File{Fh: r.Fh}, nil
 	}
 
@@ -129,29 +125,29 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 }
 
-// var dirDirs = []fuse.Dirent{
-//	{Inode: 2, Name: "hello", Type: fuse.DT_File},
-// }
-
-// TODO: readdir (need to implement on server side too)
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
-	// TODO: count is meaningless right now, might need to change that on server side
+	// TODO: count is meaningless right now, might need to change that on server side?
 	count := 10
-	count = count
-
 	r, err := conn_pb.Readdir(context.Background(),
-		&pb.ReaddirArgs{Dirfh: d.Fh, Count: 10})
+		&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
 	if err != nil {
 		// TODO: handle errors
 	}
 
+	// transfer our rpc Dirent into a fuse Dirent
 	var dirDirs []fuse.Dirent
 	dirDirs = make([]fuse.Dirent, len(r.Entries))
-
 	for i := 0; i < len(r.Entries); i++ {
-		dirDirs[i] = fuse.Dirent{Inode: r.Entries[i].Inode, Name: r.Entries[i].Name, Type: fuse.DT_File}
+
+		fileType := fuse.DT_File
+		if ModeToBoolIfDir(r.Entries[i].Mode) {
+			fileType = fuse.DT_Dir
+			// fmt.Println("File is recognized as being a directory: %v", r.Entries[i].Name)
+		}
+
+		dirDirs[i] = fuse.Dirent{Inode: r.Entries[i].Inode, Name: r.Entries[i].Name, Type: fileType}
 	}
 
 	return dirDirs, nil
@@ -162,18 +158,16 @@ type File struct {
 	Fh *pb.FileHandle
 }
 
-const greeting = "hello, world\n"
-
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = 2
 	a.Mode = 0444
-	a.Size = uint64(len(greeting))
+	a.Size = uint64(1)
 	return nil
 }
 
 func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 
-	// TODO: need to know file size, which we put in count
+	// TODO: need to know file size, which we put in count; we can stat the file to get this for now
 
 	r, err := conn_pb.Read(context.Background(),
 		&pb.ReadArgs{
@@ -190,4 +184,9 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 	log.Printf("Errors: %v\n", err)
 
 	return r.Data, nil
+}
+
+// returns true if it's a directory
+func ModeToBoolIfDir(mode uint32) bool {
+	return (mode & 0040000) > 0
 }
