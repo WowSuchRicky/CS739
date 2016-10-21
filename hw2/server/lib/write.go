@@ -5,6 +5,7 @@ import (
 	"fmt"
 	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"os"
+	"syscall"
 )
 
 func WriteNFS(in *pb.WriteArgs) (*pb.WriteReturn, error) {
@@ -40,7 +41,13 @@ func WriteNFS(in *pb.WriteArgs) (*pb.WriteReturn, error) {
 	n_bytes_written, err := f.WriteAt(data_to_write, in.Offset)
 	n_bytes_written = n_bytes_written // to supress compiler warning
 
-	// TODO: pull out attributes of that file AFTER writing it
+	// get attributes after writing it
+	var f_info syscall.Stat_t
+	err = syscall.Stat(filepath, &f_info)
+	if err != nil {
+		fmt.Println("Stat failed, FATAL error")
+		os.Exit(-1)
+	}
 
-	return &pb.WriteReturn{Attr: &pb.Attribute{}}, err
+	return &pb.WriteReturn{Attr: StatToAttr(&f_info)}, err
 }

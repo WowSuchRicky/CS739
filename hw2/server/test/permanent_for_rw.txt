@@ -1,4 +1,4 @@
-Helloaecdis is a file on the NFS server.
+Helloaezdis is a file on the NFS server.
 Test
 Blah
 Bleh

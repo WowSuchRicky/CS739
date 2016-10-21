@@ -5,6 +5,7 @@ import (
 	"fmt"
 	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"os"
+	"syscall"
 )
 
 // we're not using the syscalls directly here, so we're not dealing
@@ -59,7 +60,13 @@ func ReadNFS(in *pb.ReadArgs) (*pb.ReadReturn, error) {
 	// TODO: if f_count is greater than the number of bytes to read in data, do
 	// we need to do anything special?
 
-	// TODO: what do we do with file attributes?
+	// stat file to fill attributes
+	var f_info syscall.Stat_t
+	err = syscall.Stat(filepath, &f_info)
+	if err != nil {
+		fmt.Println("Stat failed, FATAL error")
+		os.Exit(-1)
+	}
 
-	return &pb.ReadReturn{Attr: &pb.Attribute{}, Data: data}, nil
+	return &pb.ReadReturn{Attr: StatToAttr(&f_info), Data: data}, nil
 }

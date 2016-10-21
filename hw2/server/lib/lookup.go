@@ -43,7 +43,5 @@ func LookupNFS(in *pb.LookupArgs) (*pb.LookupReturn, error) {
 		os.Exit(-1)
 	}
 
-	// TODO: get attributes
-
-	return &pb.LookupReturn{Fh: &pb.FileHandle{Inode: ret_inode, Genum: ret_genum}, Attr: &pb.Attribute{}}, err
+	return &pb.LookupReturn{Fh: &pb.FileHandle{Inode: ret_inode, Genum: ret_genum}, Attr: StatToAttr(&f_info)}, nil
 }

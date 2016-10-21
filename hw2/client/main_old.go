@@ -185,7 +185,7 @@ func main() {
 		genum = 2338748407
 		offset = 5
 		count = 4
-		data = []byte{'a', 'e', 'c', 'd'}
+		data = []byte{'a', 'e', 'z', 'd'}
 
 		if len(os.Args) < 6 {
 			// log.Printf("write inode genum offset count\n")
