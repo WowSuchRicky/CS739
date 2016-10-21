@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 
 	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"google.golang.org/grpc"
@@ -112,17 +111,8 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 			Dirfh: d.Fh,
 			Name:  name})
 
-	if err != nil {
-		//@TODO: Remove
-		errType := reflect.TypeOf(err)
-		fmt.Printf("Errtype: %v\n", errType)
-		for i := 0; i < errType.NumField(); i++ {
-			field := errType.Field(i)
-			fmt.Println(field.Name)
-		}
-	}
-
-	for err != nil {
+	
+	for err != nil && err.Error() == "rpc error: code = 14 desc = grpc: the connection is unavailable" {
 		r, err = conn_pb.Lookup(context.Background(),
 			&pb.LookupArgs{Dirfh: d.Fh, Name: name})
 		//fmt.Printf("Lookup, retrying...err: %v\n", err)
@@ -146,13 +136,11 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	r, err := conn_pb.Readdir(context.Background(),
 		&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
-	v,ok := err.(grpc.rpcError*)
-	
-	for !ok{
+		
+	for err != nil && err.Error() == "rpc error: code = 14 desc = grpc: the connection is unavailable"{
 		r, err = conn_pb.Readdir(context.Background(),
 			&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
-		v,ok = err.(grpc.rpcError*)
 		//fmt.Printf("retrying ReadDirAll... err: %v\n", err)
 
 		// TODO: handle errors
