@@ -121,5 +121,27 @@ func (File) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (File) ReadAll(ctx context.Context) ([]byte, error) {
-	return []byte(greeting), nil
+	var inode int64
+	var genum int64
+	var offset int64
+	var count int64
+
+	inode = 1056452
+	genum = 2338748407
+	offset = 5
+	count = 10
+
+
+	r, err := conn_pb.Read(context.Background(),
+		&pb.ReadArgs{
+			Fh:     &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
+			Offset: int64(offset),
+			Count:  int64(count)})
+
+	log.Printf("read response: %v\n", r)
+	log.Printf("Errors: %v\n", err)
+
+	return r, err
+
+	// return []byte(greeting), nil
 }
