@@ -99,6 +99,8 @@ func main() {
 		genum = 2338734807
 		name = "test_new.txt"
 
+		mode := uint32(00666)
+
 		if len(os.Args) < 5 {
 			//log.Printf("create dir_inode dir_genum filename [attribute, add later]\n")
 			//os.Exit(1)
@@ -111,7 +113,7 @@ func main() {
 			&pb.CreateArgs{
 				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
 				Name:  name,
-				Attr:  &pb.Attribute{}})
+				Attr:  &pb.Attribute{Mode: uint32(mode)}})
 
 		log.Printf("create response: %v\n", r)
 		log.Printf("Errors: %v\n", err)
