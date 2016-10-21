@@ -141,7 +141,7 @@ func (File) ReadAll(ctx context.Context) ([]byte, error) {
 	log.Printf("read response: %v\n", r)
 	log.Printf("Errors: %v\n", err)
 
-	return r, err
+	return r.Data, err
 
 	// return []byte(greeting), nil
 }
