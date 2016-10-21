@@ -229,6 +229,17 @@ func main() {
 		log.Printf("readdir response: %v\n", r)
 		log.Printf("Errors: %v\n", err)
 
+	} else if call == "getattr" {
+		inode := 1052236
+		genum := 2338734807
+
+		r, err := c.Getattr(context.Background(),
+			&pb.GetAttrArgs{
+				Fh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)}})
+
+		log.Printf("getattr response: %v\n", r)
+		log.Printf("errors: %v\n", err)
+
 	} else {
 		log.Printf("invalid args\n")
 	}

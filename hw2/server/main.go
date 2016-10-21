@@ -77,6 +77,10 @@ func (s *server) Root(ctx context.Context, in *pb.RootArgs) (*pb.RootReturn, err
 	return nfs.GetRootNFS(in)
 }
 
+func (s *server) Getattr(ctx context.Context, in *pb.GetAttrArgs) (*pb.GetAttrReturn, error) {
+	return nfs.GetAttrNFS(in)
+}
+
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

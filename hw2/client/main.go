@@ -162,28 +162,57 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = 2
 	a.Mode = 0444
 	a.Size = uint64(1)
+
+	r, err := conn_pb.Getattr(context.Background(),
+		&pb.GetAttrArgs{
+			Fh: f.Fh})
+
+	if err != nil {
+		fmt.Println("Error on file Attr()")
+		os.Exit(-1)
+	}
+
+	// we aren't sending inode in NFS get_attr since it's redundant but if the
+	// attr call succeeds, the inode should be the same one that we passed in
+	a.Inode = f.Fh.Inode
+	a.Mode = os.FileMode(r.Attr.Mode)
+	a.Size = r.Attr.Size
+	a.Uid = r.Attr.Uid
+	a.Gid = r.Attr.Gid
+
+	// TODO: ignoring some other stuff in fuse Attr structure, that maybe we want...
 	return nil
 }
 
 func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 
-	// TODO: need to know file size, which we put in count; we can stat the file to get this for now
+	// get file size
+	r, err := conn_pb.Getattr(context.Background(),
+		&pb.GetAttrArgs{
+			Fh: f.Fh})
 
-	r, err := conn_pb.Read(context.Background(),
+	if err != nil {
+		fmt.Println("Error on NFS protocol getAttr()")
+		os.Exit(-1)
+	}
+
+	file_size := r.Attr.Size
+
+	r2, err := conn_pb.Read(context.Background(),
 		&pb.ReadArgs{
 			Fh:     f.Fh,
 			Offset: int64(0),
-			Count:  int64(5)})
+			Count:  int64(file_size)})
 
 	if err != nil {
 		// TODO: what do we return for err
 		return nil, fuse.EIO
 	}
 
-	log.Printf("read response: %v\n", r)
+	log.Printf("read response: %v\n", r2)
 	log.Printf("Errors: %v\n", err)
 
-	return r.Data, nil
+	return r2.Data, nil
 }
 
 // returns true if it's a directory
