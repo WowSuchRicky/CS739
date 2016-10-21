@@ -207,6 +207,17 @@ func main() {
 		log.Printf("write response: %v\n", r)
 		log.Printf("Errors: %v\n", err)
 
+	} else if call == "root" {
+
+		root_path_on_server := "test/" // relative to the location of server's main function
+
+		r, err := c.Root(context.Background(),
+			&pb.RootArgs{
+				Path: root_path_on_server})
+
+		log.Printf("root response: %v\n", r)
+		log.Printf("Errors: %v\n", err)
+
 	} else {
 		log.Printf("invalid args\n")
 	}

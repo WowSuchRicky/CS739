@@ -69,6 +69,10 @@ func (s *server) Write(ctx context.Context, in *pb.WriteArgs) (*pb.WriteReturn, 
 	return nfs.WriteNFS(in)
 }
 
+func (s *server) Root(ctx context.Context, in *pb.RootArgs) (*pb.RootReturn, error) {
+	return nfs.GetRootNFS(in)
+}
+
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

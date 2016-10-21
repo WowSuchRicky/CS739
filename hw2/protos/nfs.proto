@@ -46,6 +46,15 @@ message LookupReturn {
     Attribute attr = 2;
 }
 
+message RootArgs {
+    string path = 1;
+}
+
+message RootReturn {
+    FileHandle fh = 1;
+    Attribute attr = 2;
+}
+
 message CreateArgs {
     FileHandle dirfh = 1;
     string name = 2;
@@ -100,6 +109,7 @@ message WriteReturn {
  
 service NFS {
     // No null call for now (not sure if needed since grpc is smart itself!)
+    rpc root(RootArgs) returns (RootReturn) {} // we aren't going to use the LookupArgs here; 
     rpc lookup(LookupArgs) returns (LookupReturn) {}
     rpc create(CreateArgs) returns (CreateReturn) {}
     rpc remove(RemoveArgs) returns (RemoveReturn) {}
