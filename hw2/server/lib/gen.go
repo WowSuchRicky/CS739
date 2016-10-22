@@ -1,25 +1,20 @@
 package nfs
 
-import (
-	"bytes"
-	"fmt"
-	"os/exec"
-	"strconv"
-)
+// #include <sys/ioctl.h>
+// #include <sys/fcntl.h>
+// #include <linux/fs.h>
+// #include <stdio.h>
+// #include <errno.h>
+// unsigned long int pathtogen (char *path) {
+//    int fileno = open(path, O_RDONLY);
+//    unsigned int generation = 0;
+//    if (ioctl(fileno, FS_IOC_GETVERSION, &generation)) {
+//       printf("errno: %d\n", errno);
+//    }
+//    return generation; 
+// }
+import "C"
 
 func PathToGen(path string) (uint64, error) {
-	cmd := exec.Command("./lib/generation", path)
-
-	var outb bytes.Buffer
-	cmd.Stdout = &outb
-
-	err := cmd.Run()
-
-	if err != nil {
-		fmt.Println("Error")
-		return 0, err
-	}
-
-	out, err := strconv.Atoi(outb.String())
-	return uint64(out), err
+	return uint64(C.pathtogen(C.CString(path))), nil
 }

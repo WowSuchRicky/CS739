@@ -19,12 +19,14 @@ import (
 // @TODO: Remember that this is the VM IP address
 const (
 	address = "104.197.218.40:50051"
+	err_grpc = "rpc error: code = 14 desc = grpc: the connection is unavailable"
+	
 )
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s MOUNTPOINT\n", os.Args[0])
-	//flag.PrintDefaults()
+	flag.PrintDefaults()
 }
 
 // Global vars for NFS
@@ -52,9 +54,10 @@ func main() {
 	c, err := fuse.Mount(
 		mountpoint,
 		fuse.FSName("helloworld"),
-		fuse.Subtype("hellofs"),
+		//fuse.Subtype("hellofs"),
 		fuse.LocalVolume(),
 		fuse.VolumeName("Hello world!"),
+		
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -112,11 +115,16 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 			Name:  name})
 
 	
-	for err != nil && err.Error() == "rpc error: code = 14 desc = grpc: the connection is unavailable" {
+	for err != nil && err.Error() == err_grpc {
 		r, err = conn_pb.Lookup(context.Background(),
 			&pb.LookupArgs{Dirfh: d.Fh, Name: name})
 		//fmt.Printf("Lookup, retrying...err: %v\n", err)
 		// TODO: error
+	}
+
+	// non-grpc error, return nil
+	if err != nil{
+		return nil, fuse.ENOENT
 	}
 
 	if ModeToBoolIfDir(r.Attr.Mode) {
@@ -137,13 +145,17 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
 		
-	for err != nil && err.Error() == "rpc error: code = 14 desc = grpc: the connection is unavailable"{
+	for err != nil && err.Error() == err_grpc{
 		r, err = conn_pb.Readdir(context.Background(),
 			&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
 		//fmt.Printf("retrying ReadDirAll... err: %v\n", err)
 
-		// TODO: handle errors
+	
+	}
+
+	if err != nil{
+		return nil, fuse.ENOENT
 	}
 
 	// transfer our rpc Dirent into a fuse Dirent
@@ -166,12 +178,13 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 // File implements both Node and Handle for the hello file.
 type File struct {
 	Fh *pb.FileHandle
+	Offset int64
 }
 
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Inode = 2
-	a.Mode = 0444
-	a.Size = uint64(1)
+	//a.Inode = 2
+	//a.Mode = 0444
+	//a.Size = uint64(1)
 
 	r, err := conn_pb.Getattr(context.Background(),
 		&pb.GetAttrArgs{
@@ -179,7 +192,7 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 
 	if err != nil {
 		fmt.Println("Error on file Attr()")
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	// we aren't sending inode in NFS get_attr since it's redundant but if the
@@ -203,7 +216,7 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 
 	if err != nil {
 		fmt.Println("Error on NFS protocol getAttr()")
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	file_size := r.Attr.Size
@@ -223,6 +236,67 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 	log.Printf("Errors: %v\n", err)
 
 	return r2.Data, nil
+}
+
+type Node struct {
+	Fh *pb.FileHandle
+} 
+
+
+
+//@TODO: ????
+var _ = fs.NodeCreater(&Node{})
+
+func (n *Node) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error){
+	fmt.Println("Create called")
+
+	attr := &pb.Attribute{}
+	attr.Mode = uint32(req.Mode)
+	
+	_, err := conn_pb.Create(context.Background(),
+		&pb.CreateArgs{
+			Dirfh:  n.Fh,
+			Name:   req.Name,
+			Attr:   attr})
+
+	if err != nil{
+		fmt.Printf("Error: %v\n", err)
+	}
+	
+	//@TODO fix plz
+	return nil, nil, nil
+}
+
+
+var _ = fs.NodeOpener(&File{})
+
+func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+
+	fmt.Printf("Open called\n")
+	fh := pb.FileHandle{}
+	return fh, nil
+	
+	/*
+	r, err := f.file.Open()
+
+
+	if err != nil {
+		return nil, err
+	}
+	// individual entries inside a zip file are not seekable
+	resp.Flags |= fuse.OpenNonSeekable
+	return &FileHandle{r: r}, nil
+
+        */
+
+	
+}
+
+
+func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
+	fmt.Println("Write called")
+
+	return nil
 }
 
 // returns true if it's a directory
