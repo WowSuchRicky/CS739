@@ -235,7 +235,8 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 	_, err := conn_pb.Remove(context.Background(),
 		&pb.RemoveArgs{
 			Dirfh: d.Fh,
-			Name:  req.Name})
+			Name:  req.Name,
+			IsDir: req.Dir})
 
 	// TODO: RemoveReturn in our nfs-like protocol actually
 	// return status; we might not need to use it? because we have
