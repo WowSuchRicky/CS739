@@ -176,6 +176,8 @@ type File struct {
 	Offset int64
 }
 
+var _ fs.Node = (*File)(nil)
+
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	//a.Inode = 2
 	//a.Mode = 0444
@@ -237,10 +239,12 @@ type Node struct {
 	Fh *pb.FileHandle
 }
 
-//@TODO: ????
-var _ = fs.NodeCreater(&Node{})
+//var _ fs.Node = (*Node)(nil)
 
-func (n *Node) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
+//@TODO: ????
+// var _ = fs.NodeCreater(&Node{})
+
+func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
 	fmt.Println("Create called")
 
 	attr := &pb.Attribute{}
@@ -248,7 +252,7 @@ func (n *Node) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.C
 
 	r, err := conn_pb.Create(context.Background(),
 		&pb.CreateArgs{
-			Dirfh: n.Fh,
+			Dirfh: d.Fh,
 			Name:  req.Name,
 			Attr:  attr})
 
@@ -256,8 +260,9 @@ func (n *Node) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.C
 		fmt.Printf("Error: %v\n", err)
 	}
 
-	//@TODO fix plz
-	return nil, r.Newfh, nil
+	created_file := &File{Fh: r.Newfh, Offset: 0}
+
+	return created_file, created_file, nil
 }
 
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
