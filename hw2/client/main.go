@@ -208,7 +208,7 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 
-	fmt.Println("Mkdir called")
+	fmt.Printf("Mkdir called\n")
 
 	attr := &pb.Attribute{}
 	attr.Mode = uint32(req.Mode)
@@ -225,6 +225,28 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 	}
 
 	return &Dir{Fh: r.Fh}, nil
+}
+
+func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
+
+	fmt.Printf("Remove called\n")
+
+	// request contains Dir boolean, whcih is true if we're removing a dir; need to handle that
+	_, err := conn_pb.Remove(context.Background(),
+		&pb.RemoveArgs{
+			Dirfh: d.Fh,
+			Name:  req.Name})
+
+	// TODO: RemoveReturn in our nfs-like protocol actually
+	// return status; we might not need to use it? because we have
+	// err - think about it more
+	if err != nil {
+		fmt.Printf("Error on remove: %v\n", err)
+		return err
+	}
+
+	return nil
+
 }
 
 // File implements both Node and Handle for the hello file.
