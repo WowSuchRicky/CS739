@@ -97,14 +97,28 @@ type Dir struct {
 
 var _ fs.Node = (*Dir)(nil)
 
-// TODO: attribute for directory
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Inode = 4291
-	a.Mode = os.ModeDir | 0666
+	r, err := conn_pb.Getattr(context.Background(),
+		&pb.GetAttrArgs{
+			Fh: d.Fh})
+
+	if err != nil {
+		fmt.Println("Error on file Attr()")
+		os.Exit(-1)
+	}
+
+	// we aren't sending inode in NFS get_attr since it's redundant but if the
+	// attr call succeeds, the inode should be the same one that we passed in
+	a.Inode = d.Fh.Inode
+	a.Mode = os.ModeDir | os.FileMode(r.Attr.Mode)
+	a.Size = r.Attr.Size
+	a.Uid = r.Attr.Uid
+	a.Gid = r.Attr.Gid
+
+	// TODO: ignoring some other stuff in fuse Attr structure, that maybe we want...
 	return nil
 }
 
-// TODO: lookup for directory
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 	r, err := conn_pb.Lookup(context.Background(),
@@ -170,6 +184,49 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	return dirDirs, nil
 }
 
+func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
+	fmt.Println("Create called")
+
+	attr := &pb.Attribute{}
+	attr.Mode = uint32(req.Mode)
+
+	r, err := conn_pb.Create(context.Background(),
+		&pb.CreateArgs{
+			Dirfh: d.Fh,
+			Name:  req.Name,
+			Attr:  attr})
+
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return &File{}, &File{}, err
+	}
+
+	created_file := &File{Fh: r.Newfh, Offset: 0}
+
+	return created_file, created_file, nil
+}
+
+func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
+
+	fmt.Println("Mkdir called")
+
+	attr := &pb.Attribute{}
+	attr.Mode = uint32(req.Mode)
+
+	r, err := conn_pb.Mkdir(context.Background(),
+		&pb.MkdirArgs{
+			Dirfh: d.Fh,
+			Name:  req.Name,
+			Attr:  attr})
+
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return &Dir{}, err
+	}
+
+	return &Dir{Fh: r.Fh}, nil
+}
+
 // File implements both Node and Handle for the hello file.
 type File struct {
 	Fh     *pb.FileHandle
@@ -179,10 +236,6 @@ type File struct {
 var _ fs.Node = (*File)(nil)
 
 func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
-	//a.Inode = 2
-	//a.Mode = 0444
-	//a.Size = uint64(1)
-
 	r, err := conn_pb.Getattr(context.Background(),
 		&pb.GetAttrArgs{
 			Fh: f.Fh})
@@ -235,6 +288,29 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 	return r2.Data, nil
 }
 
+func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
+	fmt.Println("Write called")
+
+	size_data := len(req.Data)
+
+	_, err := conn_pb.Write(context.Background(),
+		&pb.WriteArgs{
+			Fh:     f.Fh,
+			Offset: req.Offset,
+			Count:  int64(size_data),
+			Data:   req.Data})
+
+	if err != nil {
+		fmt.Println("Write error!")
+		return err
+	}
+
+	// TODO: need to return size of data written; try Attr?
+	resp.Size = size_data
+
+	return nil
+}
+
 type Node struct {
 	Fh *pb.FileHandle
 }
@@ -243,47 +319,6 @@ type Node struct {
 
 //@TODO: ????
 // var _ = fs.NodeCreater(&Node{})
-
-func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	fmt.Println("Create called")
-
-	attr := &pb.Attribute{}
-	attr.Mode = uint32(req.Mode)
-
-	r, err := conn_pb.Create(context.Background(),
-		&pb.CreateArgs{
-			Dirfh: d.Fh,
-			Name:  req.Name,
-			Attr:  attr})
-
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	}
-
-	created_file := &File{Fh: r.Newfh, Offset: 0}
-
-	return created_file, created_file, nil
-}
-
-func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
-
-	fmt.Println("Mkdir called")
-
-	attr := &pb.Attribute{}
-	attr.Mode = uint32(req.Mode)
-
-	r, err := conn_pb.Mkdir(context.Background(),
-		&pb.MkdirArgs{
-			Dirfh: d.Fh,
-			Name:  req.Name,
-			Attr:  attr})
-
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	}
-
-	return &Dir{Fh: r.Fh}, nil
-}
 
 //var _ = fs.NodeOpener(&File{})
 
@@ -307,15 +342,6 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenR
 	// comment end here
 
 }
-*/
-
-/*
-func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
-	fmt.Println("Write called")
-
-	return nil
-}
-
 */
 
 // returns true if it's a directory
