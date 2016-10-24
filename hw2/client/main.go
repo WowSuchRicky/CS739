@@ -251,7 +251,7 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 }
 
 // NOTE: is not working
-func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir Node) error {
+func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir Dir) error {
 	fmt.Printf("Rename called\n")
 
 	_, err := conn_pb.Rename(context.Background(),
@@ -353,9 +353,11 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 	return nil
 }
 
+/*
 type Node struct {
 	Fh *pb.FileHandle
 }
+*/
 
 //var _ fs.Node = (*Node)(nil)
 

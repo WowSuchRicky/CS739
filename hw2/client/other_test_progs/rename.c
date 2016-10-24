@@ -8,8 +8,8 @@
 #include <errno.h>
 
 int main(int argc, char *argv[]){
-  int status = rename("test2.txt", "test3.txt");
-  //int status = rename("test/test2.txt", "test/test3.txt");
+  //int status = rename("test2.txt", "test3.txt");
+  int status = rename("test/test2.txt", "test/test3.txt");
 
   printf("errno %s\n", strerror(errno));
 }
