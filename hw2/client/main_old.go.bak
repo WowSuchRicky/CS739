@@ -240,6 +240,21 @@ func main() {
 		log.Printf("getattr response: %v\n", r)
 		log.Printf("errors: %v\n", err)
 
+	} else if call == "mkdir" {
+		inode := 1052236
+		genum := 2338734807
+		name := "new_Dir"
+		mode := uint32(00666)
+
+		r, err := c.Mkdir(context.Background(),
+			&pb.MkdirArgs{
+				Dirfh: &pb.FileHandle{Inode: uint64(inode), Genum: uint64(genum)},
+				Name:  name,
+				Attr:  &pb.Attribute{Mode: uint32(mode)}})
+
+		log.Printf("mkdir response: %v\n", r)
+		log.Printf("errors: %v\n", err)
+
 	} else {
 		log.Printf("invalid args\n")
 	}

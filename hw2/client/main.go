@@ -18,9 +18,8 @@ import (
 
 // @TODO: Remember that this is the VM IP address
 const (
-	address = "104.197.218.40:50051"
+	address  = "104.197.218.40:50051"
 	err_grpc = "rpc error: code = 14 desc = grpc: the connection is unavailable"
-	
 )
 
 func usage() {
@@ -57,7 +56,6 @@ func main() {
 		//fuse.Subtype("hellofs"),
 		fuse.LocalVolume(),
 		fuse.VolumeName("Hello world!"),
-		
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -85,7 +83,7 @@ type FS struct {
 	Fh *pb.FileHandle
 }
 
-// var _ fs.FS = (*FS)(nil)
+var _ fs.FS = (*FS)(nil)
 
 func (f *FS) Root() (fs.Node, error) {
 	fmt.Println("Root path: %v", f.Fh)
@@ -97,12 +95,12 @@ type Dir struct {
 	Fh *pb.FileHandle
 }
 
-// var _ fs.Node = (*Dir)(nil)
+var _ fs.Node = (*Dir)(nil)
 
 // TODO: attribute for directory
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = 4291
-	a.Mode = os.ModeDir | 0555
+	a.Mode = os.ModeDir | 0666
 	return nil
 }
 
@@ -114,7 +112,6 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 			Dirfh: d.Fh,
 			Name:  name})
 
-	
 	for err != nil && err.Error() == err_grpc {
 		r, err = conn_pb.Lookup(context.Background(),
 			&pb.LookupArgs{Dirfh: d.Fh, Name: name})
@@ -123,7 +120,7 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 
 	// non-grpc error, return nil
-	if err != nil{
+	if err != nil {
 		return nil, fuse.ENOENT
 	}
 
@@ -144,17 +141,15 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	r, err := conn_pb.Readdir(context.Background(),
 		&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
-		
-	for err != nil && err.Error() == err_grpc{
+	for err != nil && err.Error() == err_grpc {
 		r, err = conn_pb.Readdir(context.Background(),
 			&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
 		//fmt.Printf("retrying ReadDirAll... err: %v\n", err)
 
-	
 	}
 
-	if err != nil{
+	if err != nil {
 		return nil, fuse.ENOENT
 	}
 
@@ -177,7 +172,7 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 // File implements both Node and Handle for the hello file.
 type File struct {
-	Fh *pb.FileHandle
+	Fh     *pb.FileHandle
 	Offset int64
 }
 
@@ -240,45 +235,62 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 
 type Node struct {
 	Fh *pb.FileHandle
-} 
-
-
+}
 
 //@TODO: ????
 var _ = fs.NodeCreater(&Node{})
 
-func (n *Node) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error){
+func (n *Node) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
 	fmt.Println("Create called")
 
 	attr := &pb.Attribute{}
 	attr.Mode = uint32(req.Mode)
-	
-	_, err := conn_pb.Create(context.Background(),
-		&pb.CreateArgs{
-			Dirfh:  n.Fh,
-			Name:   req.Name,
-			Attr:   attr})
 
-	if err != nil{
+	r, err := conn_pb.Create(context.Background(),
+		&pb.CreateArgs{
+			Dirfh: n.Fh,
+			Name:  req.Name,
+			Attr:  attr})
+
+	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 	}
-	
+
 	//@TODO fix plz
-	return nil, nil, nil
+	return nil, r.Newfh, nil
 }
 
+func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 
-var _ = fs.NodeOpener(&File{})
+	fmt.Println("Mkdir called")
 
+	attr := &pb.Attribute{}
+	attr.Mode = uint32(req.Mode)
+
+	r, err := conn_pb.Mkdir(context.Background(),
+		&pb.MkdirArgs{
+			Dirfh: d.Fh,
+			Name:  req.Name,
+			Attr:  attr})
+
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+
+	return &Dir{Fh: r.Fh}, nil
+}
+
+//var _ = fs.NodeOpener(&File{})
+
+/*
 func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
 
 	fmt.Printf("Open called\n")
 	fh := pb.FileHandle{}
 	return fh, nil
-	
-	/*
-	r, err := f.file.Open()
 
+	// comment between here
+	r, err := f.file.Open()
 
 	if err != nil {
 		return nil, err
@@ -287,17 +299,19 @@ func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenR
 	resp.Flags |= fuse.OpenNonSeekable
 	return &FileHandle{r: r}, nil
 
-        */
+	// comment end here
 
-	
 }
+*/
 
-
+/*
 func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
 	fmt.Println("Write called")
 
 	return nil
 }
+
+*/
 
 // returns true if it's a directory
 func ModeToBoolIfDir(mode uint32) bool {

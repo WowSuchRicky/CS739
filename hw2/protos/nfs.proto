@@ -126,6 +126,19 @@ message GetAttrReturn {
     Attribute attr = 1;
 }
 
+message MkdirArgs {
+    FileHandle dirfh = 1;
+    string name = 2;
+    Attribute attr = 3; 
+}
+
+message MkdirReturn {
+    FileHandle fh = 1;
+    Attribute attr = 2; 
+}
+
+
+
 /*
  * Here we can add more functionality later, we have a good enough start for
  * now.
@@ -141,4 +154,5 @@ service NFS {
     rpc write(WriteArgs) returns (WriteReturn) {}
     rpc readdir(ReaddirArgs) returns (ReaddirReturn) {}
     rpc getattr(GetAttrArgs) returns (GetAttrReturn) {}
+    rpc mkdir(MkdirArgs) returns (MkdirReturn) {}
 }

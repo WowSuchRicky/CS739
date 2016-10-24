@@ -81,6 +81,10 @@ func (s *server) Getattr(ctx context.Context, in *pb.GetAttrArgs) (*pb.GetAttrRe
 	return nfs.GetAttrNFS(in)
 }
 
+func (s *server) Mkdir(ctx context.Context, in *pb.MkdirArgs) (*pb.MkdirReturn, error) {
+	return nfs.MkdirNFS(in)
+}
+
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
