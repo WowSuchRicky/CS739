@@ -85,6 +85,10 @@ func (s *server) Mkdir(ctx context.Context, in *pb.MkdirArgs) (*pb.MkdirReturn, 
 	return nfs.MkdirNFS(in)
 }
 
+func (s *server) Rename(ctx context.Context, in *pb.RenameArgs) (*pb.RenameReturn, error) {
+	return nfs.RenameNFS(in)
+}
+
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

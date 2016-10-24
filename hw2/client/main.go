@@ -250,6 +250,25 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 
 }
 
+// NOTE: is not working
+func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir Node) error {
+	fmt.Printf("Rename called\n")
+
+	_, err := conn_pb.Rename(context.Background(),
+		&pb.RenameArgs{
+			Dirfh:  d.Fh,
+			Name:   req.OldName,
+			Tofh:   newDir.Fh,
+			Toname: req.NewName})
+
+	if err != nil {
+		fmt.Printf("Error on rename: %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
 // File implements both Node and Handle for the hello file.
 type File struct {
 	Fh     *pb.FileHandle

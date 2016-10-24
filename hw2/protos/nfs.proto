@@ -138,12 +138,16 @@ message MkdirReturn {
     Attribute attr = 2; 
 }
 
+message RenameArgs {
+    FileHandle dirfh = 1;
+    string name = 2;
+    FileHandle tofh = 3;
+    string toname = 4;
+}
 
-
-/*
- * Here we can add more functionality later, we have a good enough start for
- * now.
- */
+message RenameReturn {
+    int32 status = 1;    
+}
  
 service NFS {
     // No null call for now (not sure if needed since grpc is smart itself!)
@@ -156,4 +160,5 @@ service NFS {
     rpc readdir(ReaddirArgs) returns (ReaddirReturn) {}
     rpc getattr(GetAttrArgs) returns (GetAttrReturn) {}
     rpc mkdir(MkdirArgs) returns (MkdirReturn) {}
+    rpc rename(RenameArgs) returns (RenameReturn) {}
 }
