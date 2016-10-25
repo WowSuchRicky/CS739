@@ -251,14 +251,19 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 }
 
 // NOTE: is not working
-func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir Dir) error {
+// Problem: we need to get the NFS file handle of the destination directory of the rename
+// More specifically: the 3rd argument must be of type fs.Node; fs.Node does not directly have a file handle, so we
+// cannot dereference it directly
+// Approach #1: do some casting to get the pointer out of newDir
+// Approach #2: the renameRequest contains the NodeID of destination directory; can we somehow do something with this?
+func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
 	fmt.Printf("Rename called\n")
 
 	_, err := conn_pb.Rename(context.Background(),
 		&pb.RenameArgs{
 			Dirfh:  d.Fh,
 			Name:   req.OldName,
-			Tofh:   newDir.Fh,
+			Tofh:   d.Fh, // the question becomes what the hell do we use here...
 			Toname: req.NewName})
 
 	if err != nil {
