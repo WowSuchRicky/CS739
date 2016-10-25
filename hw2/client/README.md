@@ -7,7 +7,7 @@ Supports:
    - Dir exploration: 	   ls, cd
    - Reading and writing:  cat, echo redirected into a file works
    - File removal:         rm (with -r for dir or without) work
-
+   - File moving: 	   mv
 
 ------
 To run FUSE client:
@@ -29,21 +29,24 @@ To run FUSE client:
 ------
 TODO:
 
-2. (Alex) using text editor like emacs doesn't work
-   it's saving the temp file correctly (with enclosing pound symbols)
+- ensure that if serve crashes and reboots immediately:
+  client doesn't notice anything beyond slow down
+  can continue to retry until succeed (idempotency)
+
+- ensure that when one file is open and client A deletes it,
+  client B should be able to continue to modify, save it.
+
+- write buffer optimization
+
+- measurements & graphs (after all else is done)
+
+- (if we have time) fix this: using text editor like emacs doesn't work
+   it's saving the buffer correctly (with enclosing pound symbols)
    doesn't seem to be able to successfully overwrite the original
 
-3. ensure that if serve crashes and reboots immediately:
-   client doesn't notice anything beyond slow down
-   can continue to retry until succeed (idempotency)
-
-4. ensure that when one file is open and client A deletes it,
-   client B should be able to continue to modify, save it.
-
-5. write buffer optimization
-
-6. measurements & graphs
-
+- answer some questions that we'll be asked during meeting
+  1) why did we pick gRPC?
+  2) others??
 
 DONE:
 1. (solved) rename isn't working fully, so 'mv' doesn't work
