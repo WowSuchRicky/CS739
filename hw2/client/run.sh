@@ -1,8 +1,6 @@
 #!/bin/bash
 
-while true;
-do
-	ls test
-done
 
-	
+sudo umount test
+go build
+

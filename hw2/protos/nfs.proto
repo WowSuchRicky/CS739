@@ -74,10 +74,11 @@ message CreateReturn {
 message RemoveArgs {
     FileHandle dirfh = 1;
     string name = 2;
+    bool isDir = 3;
 }
 
 message RemoveReturn {
-    int32 status = 1; // TODO: Double check if that's right type
+    int32 status = 1; // TODO: Double check if that's right type; actually, do we even need it? we return err too in rpc...
 }
 
 /*
@@ -126,10 +127,27 @@ message GetAttrReturn {
     Attribute attr = 1;
 }
 
-/*
- * Here we can add more functionality later, we have a good enough start for
- * now.
- */
+message MkdirArgs {
+    FileHandle dirfh = 1;
+    string name = 2;
+    Attribute attr = 3; 
+}
+
+message MkdirReturn {
+    FileHandle fh = 1;
+    Attribute attr = 2; 
+}
+
+message RenameArgs {
+    FileHandle dirfh = 1;
+    string name = 2;
+    FileHandle tofh = 3;
+    string toname = 4;
+}
+
+message RenameReturn {
+    int32 status = 1;    
+}
  
 service NFS {
     // No null call for now (not sure if needed since grpc is smart itself!)
@@ -141,4 +159,6 @@ service NFS {
     rpc write(WriteArgs) returns (WriteReturn) {}
     rpc readdir(ReaddirArgs) returns (ReaddirReturn) {}
     rpc getattr(GetAttrArgs) returns (GetAttrReturn) {}
+    rpc mkdir(MkdirArgs) returns (MkdirReturn) {}
+    rpc rename(RenameArgs) returns (RenameReturn) {}
 }

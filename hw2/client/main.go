@@ -16,15 +16,16 @@ import (
 	"golang.org/x/net/context"
 )
 
-// @TODO: Change
+// @TODO: Remember that this is the VM IP address
 const (
-	address = "localhost:50051"
+	address  = "104.197.218.40:50051"
+	err_grpc = "rpc error: code = 14 desc = grpc: the connection is unavailable"
 )
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s MOUNTPOINT\n", os.Args[0])
-	//flag.PrintDefaults()
+	flag.PrintDefaults()
 }
 
 // Global vars for NFS
@@ -52,7 +53,7 @@ func main() {
 	c, err := fuse.Mount(
 		mountpoint,
 		fuse.FSName("helloworld"),
-		fuse.Subtype("hellofs"),
+		//fuse.Subtype("hellofs"),
 		fuse.LocalVolume(),
 		fuse.VolumeName("Hello world!"),
 	)
@@ -82,7 +83,7 @@ type FS struct {
 	Fh *pb.FileHandle
 }
 
-// var _ fs.FS = (*FS)(nil)
+var _ fs.FS = (*FS)(nil)
 
 func (f *FS) Root() (fs.Node, error) {
 	fmt.Println("Root path: %v", f.Fh)
@@ -94,16 +95,30 @@ type Dir struct {
 	Fh *pb.FileHandle
 }
 
-// var _ fs.Node = (*Dir)(nil)
+var _ fs.Node = (*Dir)(nil)
 
-// TODO: attribute for directory
 func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Inode = 4291
-	a.Mode = os.ModeDir | 0555
+	r, err := conn_pb.Getattr(context.Background(),
+		&pb.GetAttrArgs{
+			Fh: d.Fh})
+
+	if err != nil {
+		fmt.Println("Error on file Attr()")
+		os.Exit(-1)
+	}
+
+	// we aren't sending inode in NFS get_attr since it's redundant but if the
+	// attr call succeeds, the inode should be the same one that we passed in
+	a.Inode = d.Fh.Inode
+	a.Mode = os.ModeDir | os.FileMode(r.Attr.Mode)
+	a.Size = r.Attr.Size
+	a.Uid = r.Attr.Uid
+	a.Gid = r.Attr.Gid
+
+	// TODO: ignoring some other stuff in fuse Attr structure, that maybe we want...
 	return nil
 }
 
-// TODO: lookup for directory
 func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 	r, err := conn_pb.Lookup(context.Background(),
@@ -111,8 +126,16 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 			Dirfh: d.Fh,
 			Name:  name})
 
-	if err != nil {
+	for err != nil && err.Error() == err_grpc {
+		r, err = conn_pb.Lookup(context.Background(),
+			&pb.LookupArgs{Dirfh: d.Fh, Name: name})
+		//fmt.Printf("Lookup, retrying...err: %v\n", err)
 		// TODO: error
+	}
+
+	// non-grpc error, return nil
+	if err != nil {
+		return nil, fuse.ENOENT
 	}
 
 	if ModeToBoolIfDir(r.Attr.Mode) {
@@ -132,8 +155,16 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	r, err := conn_pb.Readdir(context.Background(),
 		&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
+	for err != nil && err.Error() == err_grpc {
+		r, err = conn_pb.Readdir(context.Background(),
+			&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
+
+		//fmt.Printf("retrying ReadDirAll... err: %v\n", err)
+
+	}
+
 	if err != nil {
-		// TODO: handle errors
+		return nil, fuse.ENOENT
 	}
 
 	// transfer our rpc Dirent into a fuse Dirent
@@ -153,23 +184,120 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	return dirDirs, nil
 }
 
-// File implements both Node and Handle for the hello file.
-type File struct {
-	Fh *pb.FileHandle
+func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
+	fmt.Println("Create called")
+
+	attr := &pb.Attribute{}
+	attr.Mode = uint32(req.Mode)
+
+	r, err := conn_pb.Create(context.Background(),
+		&pb.CreateArgs{
+			Dirfh: d.Fh,
+			Name:  req.Name,
+			Attr:  attr})
+
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return &File{}, &File{}, err
+	}
+
+	created_file := &File{Fh: r.Newfh, Offset: 0}
+
+	return created_file, created_file, nil
 }
 
-func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Inode = 2
-	a.Mode = 0444
-	a.Size = uint64(1)
+func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 
+	fmt.Printf("Mkdir called\n")
+
+	attr := &pb.Attribute{}
+	attr.Mode = uint32(req.Mode)
+
+	r, err := conn_pb.Mkdir(context.Background(),
+		&pb.MkdirArgs{
+			Dirfh: d.Fh,
+			Name:  req.Name,
+			Attr:  attr})
+
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return &Dir{}, err
+	}
+
+	return &Dir{Fh: r.Fh}, nil
+}
+
+func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
+
+	fmt.Printf("Remove called\n")
+
+	// request contains Dir boolean, whcih is true if we're removing a dir; need to handle that
+	_, err := conn_pb.Remove(context.Background(),
+		&pb.RemoveArgs{
+			Dirfh: d.Fh,
+			Name:  req.Name,
+			IsDir: req.Dir})
+
+	// TODO: RemoveReturn in our nfs-like protocol actually
+	// return status; we might not need to use it? because we have
+	// err - think about it more
+	if err != nil {
+		fmt.Printf("Error on remove: %v\n", err)
+		return err
+	}
+
+	return nil
+
+}
+
+// NOTE: is not working
+// Problem: we need to get the NFS file handle of the destination directory of the rename
+// More specifically: the 3rd argument must be of type fs.Node; fs.Node does not directly have a file handle, so we
+// cannot dereference it directly
+// Approach #1: do some casting to get the pointer out of newDir
+// Approach #2: the renameRequest contains the NodeID of destination directory; can we somehow do something with this?
+func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
+	fmt.Printf("Rename called\n")
+
+	var x *pb.FileHandle
+	switch y := newDir.(type) {
+	case *File:
+		x = y.Fh
+	case *Dir:
+		x = y.Fh
+	}
+
+	_, err := conn_pb.Rename(context.Background(),
+		&pb.RenameArgs{
+			Dirfh:  d.Fh,
+			Name:   req.OldName,
+			Tofh:   x, // the question becomes what the hell do we use here...
+			Toname: req.NewName})
+
+	if err != nil {
+		fmt.Printf("Error on rename: %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
+// File implements both Node and Handle for the hello file.
+type File struct {
+	Fh     *pb.FileHandle
+	Offset int64
+}
+
+var _ fs.Node = (*File)(nil)
+
+func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	r, err := conn_pb.Getattr(context.Background(),
 		&pb.GetAttrArgs{
 			Fh: f.Fh})
 
 	if err != nil {
 		fmt.Println("Error on file Attr()")
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	// we aren't sending inode in NFS get_attr since it's redundant but if the
@@ -193,7 +321,7 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 
 	if err != nil {
 		fmt.Println("Error on NFS protocol getAttr()")
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	file_size := r.Attr.Size
@@ -214,6 +342,64 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 
 	return r2.Data, nil
 }
+
+func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
+	fmt.Println("Write called")
+
+	size_data := len(req.Data)
+
+	_, err := conn_pb.Write(context.Background(),
+		&pb.WriteArgs{
+			Fh:     f.Fh,
+			Offset: req.Offset,
+			Count:  int64(size_data),
+			Data:   req.Data})
+
+	if err != nil {
+		fmt.Println("Write error!")
+		return err
+	}
+
+	// TODO: need to return size of data written; try Attr?
+	resp.Size = size_data
+
+	return nil
+}
+
+/*
+type Node struct {
+	Fh *pb.FileHandle
+}
+*/
+
+//var _ fs.Node = (*Node)(nil)
+
+//@TODO: ????
+// var _ = fs.NodeCreater(&Node{})
+
+//var _ = fs.NodeOpener(&File{})
+
+/*
+func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
+
+	fmt.Printf("Open called\n")
+	fh := pb.FileHandle{}
+	return fh, nil
+
+	// comment between here
+	r, err := f.file.Open()
+
+	if err != nil {
+		return nil, err
+	}
+	// individual entries inside a zip file are not seekable
+	resp.Flags |= fuse.OpenNonSeekable
+	return &FileHandle{r: r}, nil
+
+	// comment end here
+
+}
+*/
 
 // returns true if it's a directory
 func ModeToBoolIfDir(mode uint32) bool {

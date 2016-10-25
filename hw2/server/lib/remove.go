@@ -10,6 +10,8 @@ import (
 
 func RemoveNFS(in *pb.RemoveArgs) (*pb.RemoveReturn, error) {
 	dir_path, err := InumToPath(int(in.Dirfh.Inode))
+
+	// file_path could refer to a directory or a normal file
 	file_path := dir_path + "/" + in.Name
 
 	// if InumToPath finds nothing, then that inode is unused, error
@@ -30,12 +32,15 @@ func RemoveNFS(in *pb.RemoveArgs) (*pb.RemoveReturn, error) {
 		return &pb.RemoveReturn{Status: int32(-1)}, errors.New("genum mismatch")
 	}
 
-	err = syscall.Unlink(file_path)
-
-	status := 0
-	if err != nil {
-		status = -1
+	if in.IsDir {
+		err = syscall.Rmdir(file_path)
+	} else {
+		err = syscall.Unlink(file_path)
 	}
 
-	return &pb.RemoveReturn{Status: int32(status)}, err
+	if err != nil {
+		return &pb.RemoveReturn{Status: -1}, nil
+	}
+
+	return &pb.RemoveReturn{Status: 0}, nil
 }
