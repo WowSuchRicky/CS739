@@ -259,11 +259,19 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
 	fmt.Printf("Rename called\n")
 
+	var x *pb.FileHandle
+	switch y := newDir.(type) {
+	case *File:
+		x = y.Fh
+	case *Dir:
+		x = y.Fh
+	}
+
 	_, err := conn_pb.Rename(context.Background(),
 		&pb.RenameArgs{
 			Dirfh:  d.Fh,
 			Name:   req.OldName,
-			Tofh:   d.Fh, // the question becomes what the hell do we use here...
+			Tofh:   x, // the question becomes what the hell do we use here...
 			Toname: req.NewName})
 
 	if err != nil {

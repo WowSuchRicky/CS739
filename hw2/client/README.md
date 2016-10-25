@@ -28,8 +28,6 @@ To run FUSE client:
 
 ------
 TODO:
-1. (Alex) rename isn't working fully, so 'mv' doesn't work
-   problem identified: need to access the destination dir filehandle, and this is not straightforward in FUSE for rename
 
 2. (Alex) using text editor like emacs doesn't work
    it's saving the temp file correctly (with enclosing pound symbols)
@@ -46,3 +44,7 @@ TODO:
 
 6. measurements & graphs
 
+
+DONE:
+1. (solved) rename isn't working fully, so 'mv' doesn't work
+   problem identified: need to access the destination dir filehandle, and this is not straightforward in FUSE for rename
