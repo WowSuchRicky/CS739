@@ -1,6 +1,4 @@
-main.go is the FUSE client.
-main_old.go is just used to test NFS protocol via RPC directly.
-
+NFS client
 
 ------
 Supports:
@@ -9,9 +7,11 @@ Supports:
    - File removal:         rm (with -r for dir or without) work
    - File moving: 	   mv
 
+
 ------
 To run FUSE client:
 
+0. (run the server first, using 'go run main.go' in server dir)
 1. ./run.sh
 2. ./client test (this will mount in test/ within the current directory)
 
@@ -40,14 +40,12 @@ TODO:
 
 - measurements & graphs (after all else is done)
 
-- (if we have time) fix this: using text editor like emacs doesn't work
-   it's saving the buffer correctly (with enclosing pound symbols)
-   doesn't seem to be able to successfully overwrite the original
-
 - answer some questions that we'll be asked during meeting
   1) why did we pick gRPC?
   2) others??
 
-DONE:
-1. (solved) rename isn't working fully, so 'mv' doesn't work
-   problem identified: need to access the destination dir filehandle, and this is not straightforward in FUSE for rename
+- make sure file descriptors are closing in server calls that use them
+
+- (if we have time) fix this: using text editor like emacs doesn't work
+   it's saving the buffer correctly (with enclosing pound symbols)
+   doesn't seem to be able to successfully overwrite the original
