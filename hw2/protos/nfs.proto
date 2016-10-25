@@ -101,11 +101,20 @@ message WriteArgs {
     int64 offset = 2;
     int64 count = 3;
     bytes data = 4;
+    bool stable = 5;
 }
 
 // Yes, even for single retval's, follow convention for consistency
 message WriteReturn {
-    Attribute attr = 1; 
+    Attribute attr = 1;
+    int32 writeverf3 = 2;
+}
+
+message CommitArgs {
+}
+
+message CommitReturn {
+    int32 writeverf3 = 1;
 }
 
 message ReaddirArgs {
@@ -148,7 +157,9 @@ message RenameArgs {
 message RenameReturn {
     int32 status = 1;    
 }
- 
+
+
+
 service NFS {
     // No null call for now (not sure if needed since grpc is smart itself!)
     rpc root(RootArgs) returns (RootReturn) {} // we aren't going to use the LookupArgs here; 
@@ -161,4 +172,5 @@ service NFS {
     rpc getattr(GetAttrArgs) returns (GetAttrReturn) {}
     rpc mkdir(MkdirArgs) returns (MkdirReturn) {}
     rpc rename(RenameArgs) returns (RenameReturn) {}
+    rpc commit(CommitArgs) returns (CommitReturn) {}
 }
