@@ -101,6 +101,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	// initialize our write queue
 	wq = nfs.InitializeServerWriteQueue()
 
 	// run the server

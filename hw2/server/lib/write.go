@@ -70,5 +70,6 @@ func StableWrite(filepath string, in *pb.WriteArgs) (*pb.WriteReturn, error) {
 
 func UnstableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 	wq.InsertWrite(in, filepath)
+	fmt.Printf("Write queue after insertion: %v\n", wq)
 	return &pb.WriteReturn{}, nil
 }

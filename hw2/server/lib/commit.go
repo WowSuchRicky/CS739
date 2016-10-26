@@ -5,8 +5,6 @@ import (
 )
 
 func CommitNFS(in *pb.CommitArgs, wq *ServerWriteQueue) (*pb.CommitReturn, error) {
-
-	wq = wq
-	//TODO: actually implement
-	return nil, nil
+	wq.ExecuteAllWrites()
+	return &pb.CommitReturn{}, nil
 }

@@ -76,3 +76,10 @@ ASSUMPTIONS
   requires generating unique numbers (even IP address wouldn't suffice, because you
   could have multiple clients from the same machine). Instead, the server will
   commit all changes from all clients when a single commit is received.
+
+
+TODO:
+ - (done) basic process working
+ - (done) add fsync to fuse client; should just call commit
+ - change reads so that on each read, the write buffer on server will be scanned; if any changes to the specific to-be-read file are found, apply them in memory and return it
+ - utilize writever3 thingy so that a client will know to resend everything in it's buffer if server crashed

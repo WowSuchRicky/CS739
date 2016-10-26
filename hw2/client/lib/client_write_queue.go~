@@ -1,0 +1,27 @@
+package nfs_client
+
+import (
+	pb "github.com/Ricky54326/CS739/hw2/protos"
+)
+
+var CLIENT_WRITE_QUEUE_CAPACITY = 100000
+var MAX_N_DELAYED_WRITES = 100
+
+type ClientWriteQueue struct {
+	queue []*pb.WriteArgs
+	size  int64
+}
+
+func InitializeClientWriteQueue() *ClientWriteQueue {
+	return &ClientWriteQueue{
+		size: 0}
+}
+
+func (wq *ClientWriteQueue) Reinitialize() {
+	wq.queue = wq.queue[:0] // empty it
+	wq.size = 0
+}
+
+func (wq *ClientWriteQueue) InsertWrite(in *pb.WriteArgs) {
+	wq.queue = append(wq.queue, in)
+}

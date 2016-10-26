@@ -1,14 +1,13 @@
-// Hellofs implements a simple "hello world" file system.
 package main
 
 import (
 	"flag"
 	"fmt"
-	"log"
-	"os"
-
+	nfsc "github.com/Ricky54326/CS739/hw2/client/lib"
 	pb "github.com/Ricky54326/CS739/hw2/protos"
 	"google.golang.org/grpc"
+	"log"
+	"os"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -30,6 +29,7 @@ func usage() {
 
 // Global vars for NFS
 var conn_pb pb.NFSClient
+var wq *nfsc.ClientWriteQueue
 
 func main() {
 	flag.Usage = usage
@@ -66,6 +66,8 @@ func main() {
 	root_path_on_server := "test/"
 	root_ret, err := conn_pb.Root(context.Background(), &pb.RootArgs{Path: root_path_on_server})
 	nfs_fs := &FS{Fh: root_ret.Fh}
+
+	wq = nfsc.InitializeClientWriteQueue()
 
 	err = fs.Serve(c, nfs_fs)
 	if err != nil {
@@ -418,26 +420,58 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
 	fmt.Println("Write called")
 
+	// STABLE WRITE if can't fit write into queue no matter what
+	if int64(len(req.Data)) > nfsc.CLIENT_WRITE_QUEUE_CAPACITY {
+		return performWrite(ctx, req, resp, f, true)
+	}
+
+	// COMMIT and empty queue if queue is already too full
+	if wq.Size+int64(len(req.Data)) > nfsc.CLIENT_WRITE_QUEUE_CAPACITY {
+		fmt.Println("Trying to perform commit\n")
+		performCommit()
+		wq.Reinitialize()
+	}
+
+	// UNSTABLE WRITE (it will insert into queue)
+	return performWrite(ctx, req, resp, f, false)
+}
+
+func (f *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
+	fmt.Printf("Fsync called, persisting\n")
+	performCommit()
+	wq.Reinitialize()
+	return nil
+}
+
+// returns true if it's a directory
+func ModeToBoolIfDir(mode uint32) bool {
+	return (mode & 0040000) > 0
+}
+
+func performWrite(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse, f *File, stable bool) error {
+
+	if stable {
+		fmt.Printf("Stable write client request\n")
+	} else {
+		fmt.Printf("Unstable write client request\n")
+	}
+
 	size_data := len(req.Data)
+	nfs_req := &pb.WriteArgs{
+		Fh:     f.Fh,
+		Offset: req.Offset,
+		Count:  int64(size_data),
+		Data:   req.Data,
+		Stable: stable}
 
-	_, err := conn_pb.Write(context.Background(),
-		&pb.WriteArgs{
-			Fh:     f.Fh,
-			Offset: req.Offset,
-			Count:  int64(size_data),
-			Data:   req.Data,
-			Stable: true})
+	if !stable { // add to queue if unstable write
+		wq.InsertWrite(nfs_req)
+	}
 
-	// GRPC error
+	// retry until it sends
+	_, err := conn_pb.Write(context.Background(), nfs_req)
 	for err != nil && err.Error() == err_grpc {
-		_, err = conn_pb.Write(context.Background(),
-			&pb.WriteArgs{
-				Fh:     f.Fh,
-				Offset: req.Offset,
-				Count:  int64(size_data),
-				Data:   req.Data,
-				Stable: true})
-
+		_, err = conn_pb.Write(context.Background(), nfs_req)
 	}
 
 	// non-GRPC error...
@@ -446,48 +480,24 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 		return err
 	}
 
-	// TODO: need to return size of data written; try Attr?
+	// TODO: might need to return size of data written; try Attr??
 	resp.Size = size_data
-
 	return nil
 }
 
-/*
-type Node struct {
-	Fh *pb.FileHandle
-}
-*/
+func performCommit() (*pb.CommitReturn, error) {
+	_, err := conn_pb.Commit(context.Background(),
+		&pb.CommitArgs{})
 
-//var _ fs.Node = (*Node)(nil)
-
-//@TODO: ????
-// var _ = fs.NodeCreater(&Node{})
-
-//var _ = fs.NodeOpener(&File{})
-
-/*
-func (f *File) Open(ctx context.Context, req *fuse.OpenRequest, resp *fuse.OpenResponse) (fs.Handle, error) {
-
-	fmt.Printf("Open called\n")
-	fh := pb.FileHandle{}
-	return fh, nil
-
-	// comment between here
-	r, err := f.file.Open()
+	for err != nil && err.Error() == err_grpc {
+		_, err = conn_pb.Commit(context.Background(),
+			&pb.CommitArgs{})
+	}
 
 	if err != nil {
+		fmt.Println("Commit error!")
 		return nil, err
 	}
-	// individual entries inside a zip file are not seekable
-	resp.Flags |= fuse.OpenNonSeekable
-	return &FileHandle{r: r}, nil
 
-	// comment end here
-
-}
-*/
-
-// returns true if it's a directory
-func ModeToBoolIfDir(mode uint32) bool {
-	return (mode & 0040000) > 0
+	return nil, nil
 }
