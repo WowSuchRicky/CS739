@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 void usage(char* s) {
-    char* cmd_args = "<-i infile> <-o outfile> <-n runs>";
+    char* cmd_args = "<-i infile> <-n runs>";
     fprintf(stderr, "Usage: %s %s\n" , s, cmd_args);
     exit(1);
 }
@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
     
     // input params
     opterr = 0;
-    while ((c = getopt(argc, argv, "i:o:n:")) != -1) {
+    while ((c = getopt(argc, argv, "i:n:")) != -1) {
         switch (c) {
             case 'i':
                 fname = strdup(optarg);
