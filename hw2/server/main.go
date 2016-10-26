@@ -89,6 +89,9 @@ func (s *server) Rename(ctx context.Context, in *pb.RenameArgs) (*pb.RenameRetur
 	return nfs.RenameNFS(in)
 }
 
+func (s *server) Commit(ctx context.Context, in *pb.CommitArgs) (*pb.CommitReturn, error) {
+	return nfs.CommitNFS(in)
+}
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {

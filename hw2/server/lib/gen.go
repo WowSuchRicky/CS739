@@ -11,7 +11,7 @@ package nfs
 //    if (ioctl(fileno, FS_IOC_GETVERSION, &generation)) {
 //       printf("errno: %d\n", errno);
 //    }
-//    return generation; 
+//    return generation;
 // }
 import "C"
 
