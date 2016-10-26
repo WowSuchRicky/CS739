@@ -8,7 +8,7 @@ import (
 	"syscall"
 )
 
-func WriteNFS(in *pb.WriteArgs) (*pb.WriteReturn, error) {
+func WriteNFS(in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 	// we have same input args as Read but also have Data which is an array of bytes
 	// see read.go for info on some decision made here
 
@@ -30,6 +30,20 @@ func WriteNFS(in *pb.WriteArgs) (*pb.WriteReturn, error) {
 		return &pb.WriteReturn{Attr: &pb.Attribute{}}, errors.New("genum mismatch")
 	}
 
+	// NOTE: above this is the same for both stable and unstable,
+	//       because we must notify caller immediately if the filehandle
+	//       no longer refers to what they think it does
+
+	if in.Stable {
+		fmt.Printf("Stable write\n")
+		return StableWrite(filepath, in)
+	} else {
+		fmt.Printf("Unstable write\n")
+		return UnstableWrite(filepath, in, wq)
+	}
+}
+
+func StableWrite(filepath string, in *pb.WriteArgs) (*pb.WriteReturn, error) {
 	// get file object for that file (not an fd)
 	f, err := os.OpenFile(filepath, os.O_WRONLY, 0)
 	if err != nil {
@@ -40,6 +54,7 @@ func WriteNFS(in *pb.WriteArgs) (*pb.WriteReturn, error) {
 	data_to_write := in.Data[0:in.Count]
 	n_bytes_written, err := f.WriteAt(data_to_write, in.Offset)
 	n_bytes_written = n_bytes_written // to supress compiler warning
+	// TODO: should we be calling FSYNC here?
 
 	// get attributes after writing it
 	var f_info syscall.Stat_t
@@ -50,4 +65,10 @@ func WriteNFS(in *pb.WriteArgs) (*pb.WriteReturn, error) {
 	}
 
 	return &pb.WriteReturn{Attr: StatToAttr(&f_info)}, err
+
+}
+
+func UnstableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
+	wq.InsertWrite(in, filepath)
+	return &pb.WriteReturn{}, nil
 }

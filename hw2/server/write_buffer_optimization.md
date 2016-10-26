@@ -20,7 +20,8 @@ NFS protocol:
  - Add a COMMIT call to the protocol which:
    Includes nothing in its args
    Includes a writeverf3 field (integer) in its return value
-
+ - FSYNC on client should call NFS COMMIT
+ 
 CLIENT procedure (in FUSE):
   1. Client maintains a write buffer which is essentially a list of NFS WriteArgs; this
      buffer has a predetermined maximum size.

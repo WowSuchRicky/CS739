@@ -102,11 +102,10 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 		&pb.GetAttrArgs{
 			Fh: d.Fh})
 
-
-	// GRPC error, retry til things work 
+	// GRPC error, retry til things work
 	for err != nil && err.Error() == err_grpc {
 		r, err = conn_pb.Getattr(context.Background(),
-			&pb.GetAttrArgs{ Fh: d.Fh })
+			&pb.GetAttrArgs{Fh: d.Fh})
 	}
 
 	// non-grpc error, actual problem here, abort for now..
@@ -205,12 +204,12 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 			Attr:  attr})
 
 	// GRPC error, retry
-        for err != nil && err.Error() == err_grpc {
+	for err != nil && err.Error() == err_grpc {
 		r, err = conn_pb.Create(context.Background(),
 			&pb.CreateArgs{
 				Dirfh: d.Fh,
-				Name: req.Name,
-				Attr: attr})
+				Name:  req.Name,
+				Attr:  attr})
 	}
 
 	// non-GRPC error, something actually wrong..
@@ -237,14 +236,13 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 			Name:  req.Name,
 			Attr:  attr})
 
-
 	// GRPC error, retry
-        for err != nil && err.Error() == err_grpc {
+	for err != nil && err.Error() == err_grpc {
 		r, err = conn_pb.Mkdir(context.Background(),
 			&pb.MkdirArgs{
 				Dirfh: d.Fh,
-				Name: req.Name,
-				Attr: attr})
+				Name:  req.Name,
+				Attr:  attr})
 	}
 
 	// non GRPC error, something actually wrong...
@@ -267,16 +265,15 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 			Name:  req.Name,
 			IsDir: req.Dir})
 
-
 	// GRPC error, retry
 	for err != nil && err.Error() == err_grpc {
 		_, err = conn_pb.Remove(context.Background(),
 			&pb.RemoveArgs{
 				Dirfh: d.Fh,
-				Name: req.Name,
+				Name:  req.Name,
 				IsDir: req.Dir})
 	}
-	
+
 	// TODO: RemoveReturn in our nfs-like protocol actually
 	// return status; we might not need to use it? because we have
 	// err - think about it more
@@ -314,18 +311,16 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 			Tofh:   x, // the question becomes what the hell do we use here...
 			Toname: req.NewName})
 
-
 	// GRPC error, retry..
 	for err != nil && err.Error() == err_grpc {
 		_, err = conn_pb.Rename(context.Background(),
 			&pb.RenameArgs{
-				Dirfh: d.Fh,
-				Name: req.OldName,
-				Tofh: x,
+				Dirfh:  d.Fh,
+				Name:   req.OldName,
+				Tofh:   x,
 				Toname: req.NewName})
 	}
-	
-	
+
 	// non-GRPC Error, actual issue.
 	if err != nil {
 		fmt.Printf("Error on rename: %v\n", err)
@@ -351,7 +346,7 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	// GRPC error, retry..
 	for err != nil && err.Error() == err_grpc {
 		r, err = conn_pb.Getattr(context.Background(),
-			&pb.GetAttrArgs{ Fh: f.Fh })
+			&pb.GetAttrArgs{Fh: f.Fh})
 	}
 
 	// non-GRPC error, something actually wrong..
@@ -379,13 +374,12 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 		&pb.GetAttrArgs{
 			Fh: f.Fh})
 
-
 	// GRPC error, retry.
 	for err != nil && err.Error() == err_grpc {
 		r, err = conn_pb.Getattr(context.Background(),
-			&pb.GetAttrArgs{ Fh: f.Fh })
+			&pb.GetAttrArgs{Fh: f.Fh})
 	}
-	
+
 	// non-GRPC error, something actually wrong...
 	if err != nil {
 		fmt.Println("Error on NFS protocol getAttr()")
@@ -404,9 +398,9 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 	for err != nil && err.Error() == err_grpc {
 		r2, err = conn_pb.Read(context.Background(),
 			&pb.ReadArgs{
-				Fh: f.Fh,
+				Fh:     f.Fh,
 				Offset: int64(0),
-				Count: int64(file_size)})
+				Count:  int64(file_size)})
 	}
 
 	// non-GRPC fatal error
@@ -431,17 +425,19 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 			Fh:     f.Fh,
 			Offset: req.Offset,
 			Count:  int64(size_data),
-			Data:   req.Data})
+			Data:   req.Data,
+			Stable: true})
 
 	// GRPC error
 	for err != nil && err.Error() == err_grpc {
 		_, err = conn_pb.Write(context.Background(),
 			&pb.WriteArgs{
-				Fh: f.Fh,
+				Fh:     f.Fh,
 				Offset: req.Offset,
-				Count: int64(size_data),
-				Data: req.Data})
-		
+				Count:  int64(size_data),
+				Data:   req.Data,
+				Stable: true})
+
 	}
 
 	// non-GRPC error...

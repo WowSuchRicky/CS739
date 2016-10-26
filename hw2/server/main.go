@@ -46,6 +46,8 @@ const (
 	port = ":50051"
 )
 
+var wq *(nfs.ServerWriteQueue)
+
 // we implement NFSserver using server
 type server struct{}
 
@@ -66,7 +68,7 @@ func (s *server) Read(ctx context.Context, in *pb.ReadArgs) (*pb.ReadReturn, err
 }
 
 func (s *server) Write(ctx context.Context, in *pb.WriteArgs) (*pb.WriteReturn, error) {
-	return nfs.WriteNFS(in)
+	return nfs.WriteNFS(in, wq)
 }
 
 func (s *server) Readdir(ctx context.Context, in *pb.ReaddirArgs) (*pb.ReaddirReturn, error) {
@@ -90,13 +92,18 @@ func (s *server) Rename(ctx context.Context, in *pb.RenameArgs) (*pb.RenameRetur
 }
 
 func (s *server) Commit(ctx context.Context, in *pb.CommitArgs) (*pb.CommitReturn, error) {
-	return nfs.CommitNFS(in)
+	return nfs.CommitNFS(in, wq)
 }
+
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
+	wq = nfs.InitializeServerWriteQueue()
+
+	// run the server
 	s := grpc.NewServer()
 	pb.RegisterNFSServer(s, &server{})
 	if err := s.Serve(lis); err != nil {
