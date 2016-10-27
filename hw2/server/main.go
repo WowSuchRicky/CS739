@@ -103,22 +103,7 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	// check if writeverf3 hidden file exists;
-	// - if it does, read from it to get number
-	// - if it doesn't, write to it with the number 0
-	// this will be returned on every write or commit request
-
-	// client will read it and get in sync
-	// if client has the number and it gets one back that is different, it knows
-	// server crashed; it should retry everything in its buffer
-
-	// client cleans its buffer on two conditions:
-	// 1) a commit successfully returns
-	// 2) the server returns back an incremented commit_number, meaning a commit happened
-
-	// server crash number overrides commit number; we should retry everything if both
-	// are returned as different
-
+	// read the writeverf3 number from disk
 	var writeverf3 int32
 	file, err := os.OpenFile(writeverf3_file_path, os.O_RDWR, os.ModePerm)
 	if err != nil {

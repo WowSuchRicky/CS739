@@ -9,7 +9,7 @@ How it works:
 Each client maintains a queue.
 This queue contains information for writes that have been sent to but
 not necessarily persisted on the server.
-There is a maximum size to this queue*.
+There is a maximum size to this queue.
 The server has a queue as well; it stores all the writes that it hasn't
 persisted yet in that queue. The server's queue is unbounded.
 
@@ -33,24 +33,34 @@ has increased, it will resend everything in its queue; that increase means
 the server crashed/reset and thus lost its volatile state. Doing this will catch the server up to the client.
 
 
-NOTE: the below is something we should do, but haven't done, and won't have
-      done in time for presentation.
-The server can have multiple clients.
-Since the server only stores one queue, it doesn't differentiate between
-clients. When it receives a commit request, it persists everything, from all
-clients. This means that the client queues might get out of sync from the
-server queue without the server crashing.
-There's a way around this but it's not currently implemented.
-The idea is to keep an additional number in the server which increments on every commit. This would be returned by various requests, and the client keeps
-track of the last one it saw. If at any point the client sees an increase
-but the client didn't call COMMIT itself, it knows that the server queue
-was persisted and thus it should free its queue as well.
+NOTE: A read request from the client will flush the buffer.
+      This means some benefit is lost if there's even a single read in the middle
+      of a write-heavy workload.
+      The reason this is done is because on the server, we might be reading
+      a file that has been written to but the writes haven't been persisted yet,
+      so we would need to take them into account to ensure correctness.
+      The easy way is to flush the buffer to disk, like we're doing, and then
+      read the file.
+      Alternatives could include bringing the file contents into memory, and
+      then applying the buffered write requests. This means we would be
+      going through the server write queue on every read request. This
+      penalty would be lessened if we keep a queue for every file that had
+      a write request.
+      
 
-   
+NOTE: The server can have multiple clients.
+      Since the server only stores one queue, it doesn't differentiate between
+      clients. When it receives a commit request, it persists everything, from all
+      clients. This means that the client queues might get out of sync from the
+      server queue without the server crashing.
+      There's a way around this but it's not currently implemented.
+      The idea is to keep an additional number in the server which increments on
+      every commit. This would be returned by various requests, and the client keeps
+      track of the last one it saw. If at any point the client sees an increase
+      but the client didn't call COMMIT itself, it knows that the server queue
+      was persisted and thus it should free its queue as well.
 
 
-
-*(adjust in client/lib/client_write_queue.go)
 
 
 

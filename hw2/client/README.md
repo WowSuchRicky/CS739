@@ -9,6 +9,11 @@ Supports:
 
 
 ------
+To enable/disable write buffer optimization:
+Set the boolean in client/main.go to enable/disable (true is enable)
+
+
+------
 To run FUSE client:
 
 0. (run the server first, using 'go run main.go' in server dir)
@@ -24,28 +29,3 @@ To run FUSE client:
 2. In a different process, you can now access that directory.
 3. When you're done, we need to unmount so run:
    fusermount -u test
-
-
-------
-TODO:
-
-- ensure that if serve crashes and reboots immediately:
-  client doesn't notice anything beyond slow down
-  can continue to retry until succeed (idempotency)
-
-- ensure that when one file is open and client A deletes it,
-  client B should be able to continue to modify, save it.
-
-- write buffer optimization
-
-- measurements & graphs (after all else is done)
-
-- answer some questions that we'll be asked during meeting
-  1) why did we pick gRPC?
-  2) others??
-
-- make sure file descriptors are closing in server calls that use them
-
-- (if we have time) fix this: using text editor like emacs doesn't work
-   it's saving the buffer correctly (with enclosing pound symbols)
-   doesn't seem to be able to successfully overwrite the original
