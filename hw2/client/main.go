@@ -90,7 +90,11 @@ type FS struct {
 var _ fs.FS = (*FS)(nil)
 
 func (f *FS) Root() (fs.Node, error) {
-	fmt.Println("Root path: %v", f.Fh)
+
+	if nfsc.EN_OUTPUT {
+		fmt.Println("Root path: %v", f.Fh)
+	}
+
 	return &Dir{Fh: f.Fh}, nil
 }
 
@@ -126,8 +130,9 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Uid = r.Attr.Uid
 	a.Gid = r.Attr.Gid
 
-	fmt.Printf("Calling attr on dir\n")
-
+	if nfsc.EN_OUTPUT {
+		fmt.Printf("Calling attr on dir\n")
+	}
 	// TODO: ignoring some other stuff in fuse Attr structure, that maybe we want...
 	return nil
 }
@@ -163,8 +168,10 @@ func (d *Dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
-	// TODO: count is meaningless right now, might need to change that on server side?
-	count := 10
+	// TODO: count is meaningless right now; server will always
+	// read every entry
+	count := 0
+
 	r, err := conn_pb.Readdir(context.Background(),
 		&pb.ReaddirArgs{Dirfh: d.Fh, Count: uint64(count)})
 
@@ -198,7 +205,10 @@ func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 }
 
 func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
-	fmt.Println("Create called")
+
+	if nfsc.EN_OUTPUT {
+		fmt.Println("Create called")
+	}
 
 	attr := &pb.Attribute{}
 	attr.Mode = uint32(req.Mode)
@@ -231,7 +241,9 @@ func (d *Dir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.Cr
 
 func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error) {
 
-	fmt.Printf("Mkdir called\n")
+	if nfsc.EN_OUTPUT {
+		fmt.Printf("Mkdir called\n")
+	}
 
 	attr := &pb.Attribute{}
 	attr.Mode = uint32(req.Mode)
@@ -262,7 +274,9 @@ func (d *Dir) Mkdir(ctx context.Context, req *fuse.MkdirRequest) (fs.Node, error
 
 func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 
-	fmt.Printf("Remove called\n")
+	if nfsc.EN_OUTPUT {
+		fmt.Printf("Remove called\n")
+	}
 
 	// request contains Dir boolean, whcih is true if we're removing a dir; need to handle that
 	_, err := conn_pb.Remove(context.Background(),
@@ -294,7 +308,10 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 }
 
 func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
-	fmt.Printf("Rename called\n")
+
+	if nfsc.EN_OUTPUT {
+		fmt.Printf("Rename called\n")
+	}
 
 	var x *pb.FileHandle
 	switch y := newDir.(type) {
@@ -387,6 +404,10 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 
 func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 
+	if nfsc.EN_OUTPUT {
+		fmt.Printf("Calling readall\n")
+	}
+
 	// force all changes on server to disk, resend changes if notice difference
 	if ENABLE_WRITE_BUFFER_OPT {
 		performCommit()
@@ -433,14 +454,19 @@ func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
 		return nil, fuse.EIO
 	}
 
-	log.Printf("read response: %v\n", r2)
-	log.Printf("Errors: %v\n", err)
+	if nfsc.EN_OUTPUT {
+		log.Printf("read response: %v\n", r2)
+		log.Printf("Errors: %v\n", err)
+	}
 
 	return r2.Data, nil
 }
 
 func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse) error {
-	fmt.Println("Write called")
+
+	if nfsc.EN_OUTPUT {
+		fmt.Println("Write called")
+	}
 
 	// STABLE WRITE if can't fit write into queue no matter what
 	// also, ALWAYS stable write if we disabled optimization
@@ -459,9 +485,14 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 }
 
 func (f *File) Fsync(ctx context.Context, req *fuse.FsyncRequest) error {
-	fmt.Printf("Fsync called, persisting\n")
+
+	if nfsc.EN_OUTPUT {
+		fmt.Printf("Fsync called, persisting\n")
+	}
+
 	performCommit()
 	wq.Reinitialize()
+
 	return nil
 }
 
@@ -472,10 +503,12 @@ func ModeToBoolIfDir(mode uint32) bool {
 
 func performWrite(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteResponse, f *File, stable bool) error {
 
-	if stable {
-		fmt.Printf("Stable write client request\n")
-	} else {
-		fmt.Printf("Unstable write client request\n")
+	if nfsc.EN_OUTPUT {
+		if stable {
+			fmt.Printf("Stable write client request\n")
+		} else {
+			fmt.Printf("Unstable write client request\n")
+		}
 	}
 
 	size_data := len(req.Data)
@@ -519,7 +552,9 @@ func performWrite(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteR
 
 func performCommit() (*pb.CommitReturn, error) {
 
-	fmt.Printf("Performing commit\n")
+	if nfsc.EN_OUTPUT {
+		fmt.Printf("Performing commit\n")
+	}
 
 	r, err := conn_pb.Commit(context.Background(),
 		&pb.CommitArgs{})
@@ -550,9 +585,19 @@ func performCommit() (*pb.CommitReturn, error) {
 }
 
 func sendAllWritesInQueue() {
+
+	if nfsc.EN_OUTPUT {
+		fmt.Printf("Sending all writes in queue again\n")
+	}
+
+	// send each one
 	for i := 0; i < len(wq.Queue); i++ {
 		nfs_req := wq.Queue[i]
-		fmt.Printf("Sending all writes in queue again\n")
+
+		if nfsc.EN_OUTPUT {
+			fmt.Printf("Sending a write in queue again\n")
+		}
+
 		_, err := conn_pb.Write(context.Background(), nfs_req)
 		for err != nil && err.Error() == err_grpc {
 			_, err = conn_pb.Write(context.Background(), nfs_req)

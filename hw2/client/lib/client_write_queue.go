@@ -12,6 +12,12 @@ var CLIENT_WRITE_QUEUE_CAPACITY = int64(1000)
 // can batch
 var MAX_N_DELAYED_WRITES = int64(100)
 
+// TODO: this really should be in a separate file but
+//       I couldn't figure it out quickly enough... weird error
+const (
+	EN_OUTPUT = false
+)
+
 type ClientWriteQueue struct {
 	Queue      []*pb.WriteArgs
 	Size       int64
@@ -27,15 +33,21 @@ func InitializeClientWriteQueue(writeverf3 int32) *ClientWriteQueue {
 func (wq *ClientWriteQueue) Reinitialize() {
 	wq.Queue = wq.Queue[:0] // empty it
 	wq.Size = 0
-	fmt.Printf("Inside Reinitialize, just reinitialized queue; size of queue is now: %v\n", wq.Size)
+	if EN_OUTPUT {
+		fmt.Printf("Inside Reinitialize, just reinitialized queue; size of queue is now: %v\n", wq.Size)
+	}
 }
 
 func (wq *ClientWriteQueue) InsertWrite(in *pb.WriteArgs) {
 	wq.Queue = append(wq.Queue, in)
 	wq.Size += in.Count
+
 	// copy the data in in, because it will be reused
 	dest := make([]byte, len(in.Data))
 	copy(dest, in.Data)
 	in.Data = dest
-	fmt.Printf("Inside InsertWrite, just inserted %v; size of queue is now: %v\n", in, wq.Size)
+
+	if EN_OUTPUT {
+		fmt.Printf("Inside InsertWrite, just inserted %v; size of queue is now: %v\n", in, wq.Size)
+	}
 }

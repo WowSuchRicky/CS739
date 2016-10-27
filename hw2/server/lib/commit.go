@@ -12,7 +12,9 @@ func CommitNFS(in *pb.CommitArgs, wq *ServerWriteQueue) (*pb.CommitReturn, error
 
 	// ensure all changes reach disk
 	syscall.Sync()
-	fmt.Printf("Commit: successfully synced changes to disk\n")
+	if EN_OUTPUT {
+		fmt.Printf("Commit: successfully synced changes to disk\n")
+	}
 
 	return &pb.CommitReturn{
 			Writeverf3: wq.writeverf3,

@@ -35,10 +35,14 @@ func WriteNFS(in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 	//       no longer refers to what they think it does
 
 	if in.Stable {
-		fmt.Printf("Stable write\n")
+		if EN_OUTPUT {
+			fmt.Printf("Stable write\n")
+		}
 		return StableWrite(filepath, in, wq)
 	} else {
-		fmt.Printf("Unstable write\n")
+		if EN_OUTPUT {
+			fmt.Printf("Unstable write\n")
+		}
 		return UnstableWrite(filepath, in, wq)
 	}
 }
@@ -58,7 +62,7 @@ func StableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.W
 
 	err = f.Sync()
 	if err != nil {
-		fmt.Printf("Fsync'd in stable write\n")
+		fmt.Printf("Fsync on stable write req failed\n")
 		return &pb.WriteReturn{}, err
 	}
 
@@ -81,9 +85,6 @@ func StableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.W
 func UnstableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 
 	wq.InsertWrite(in, filepath)
-	for i := 0; i < len(wq.queue); i++ {
-		fmt.Printf("Entry %d: %v\n", i, *wq.queue[i])
-	}
 	return &pb.WriteReturn{
 			Writeverf3: wq.writeverf3,
 			NCommit:    wq.n_commit},
@@ -92,7 +93,9 @@ func UnstableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb
 
 func ApplyWriteFromBuffer(filepath string, in *pb.WriteArgs) error {
 
-	fmt.Printf("Applying write from buffer\n")
+	if EN_OUTPUT {
+		fmt.Printf("Applying write from buffer\n")
+	}
 
 	// get file object for that file (not an fd)
 	f, err := os.OpenFile(filepath, os.O_WRONLY, 0)
