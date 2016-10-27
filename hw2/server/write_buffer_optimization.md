@@ -81,5 +81,14 @@ ASSUMPTIONS
 TODO:
  - (done) basic process working
  - (done) add fsync to fuse client; should just call commit
- - change reads so that on each read, the write buffer on server will be scanned; if any changes to the specific to-be-read file are found, apply them in memory and return it
- - utilize writever3 thingy so that a client will know to resend everything in it's buffer if server crashed
+ - (done) change reads so each one persists; ensure the read takes into account everything, even
+ - 	  the data that is persisted at the beginning of the read (this requires a modification to
+ -	  get attr, because we call that to know the size of the file to read, in the case of
+ -	  ReadAll. WE could do better here.
+ - utilize writever3 num so that a client will know to resend everything in it's buffer if server crashed
+ - add nfs_Commit number so clients know they should flush their own buffers
+ - perform measurements
+
+This optimization is good for write-heavy; if a lot of files are written at once, it will work well. If files are read in-between, it would require more work to be efficient.
+
+ - (ignore) change reads so that on each read, the write buffer on server will be scanned; if any changes to the specific to-be-read file are found, apply them in memory and return it

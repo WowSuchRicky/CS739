@@ -15,7 +15,7 @@ func WriteNFS(in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 	// get path for the file
 	filepath, err := InumToPath(int(in.Fh.Inode))
 	if err != nil {
-		return &pb.WriteReturn{Attr: &pb.Attribute{}}, errors.New("inode not found")
+		return &pb.WriteReturn{}, errors.New("inode not found")
 	}
 
 	// ensure genums match
@@ -27,7 +27,7 @@ func WriteNFS(in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 	}
 
 	if fh_genum != fs_genum {
-		return &pb.WriteReturn{Attr: &pb.Attribute{}}, errors.New("genum mismatch")
+		return &pb.WriteReturn{}, errors.New("genum mismatch")
 	}
 
 	// NOTE: above this is the same for both stable and unstable,
@@ -36,18 +36,18 @@ func WriteNFS(in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 
 	if in.Stable {
 		fmt.Printf("Stable write\n")
-		return StableWrite(filepath, in)
+		return StableWrite(filepath, in, wq)
 	} else {
 		fmt.Printf("Unstable write\n")
 		return UnstableWrite(filepath, in, wq)
 	}
 }
 
-func StableWrite(filepath string, in *pb.WriteArgs) (*pb.WriteReturn, error) {
+func StableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 	// get file object for that file (not an fd)
 	f, err := os.OpenFile(filepath, os.O_WRONLY, 0)
 	if err != nil {
-		return &pb.WriteReturn{Attr: &pb.Attribute{}}, err
+		return &pb.WriteReturn{}, err
 	}
 
 	// write the data into it starting at in.Offset
@@ -64,12 +64,19 @@ func StableWrite(filepath string, in *pb.WriteArgs) (*pb.WriteReturn, error) {
 		os.Exit(-1)
 	}
 
-	return &pb.WriteReturn{Attr: StatToAttr(&f_info)}, err
+	return &pb.WriteReturn{
+			Attr:       StatToAttr(&f_info),
+			Writeverf3: wq.writeverf3,
+			NCommit:    wq.n_commit},
+		err
 
 }
 
 func UnstableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 	wq.InsertWrite(in, filepath)
 	fmt.Printf("Write queue after insertion: %v\n", wq)
-	return &pb.WriteReturn{}, nil
+	return &pb.WriteReturn{
+			Writeverf3: wq.writeverf3,
+			NCommit:    wq.n_commit},
+		nil
 }

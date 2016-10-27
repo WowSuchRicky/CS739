@@ -14,7 +14,12 @@ import (
 // if we wanted to cache open file descriptors, we would just have to do
 // that separately
 
-func ReadNFS(in *pb.ReadArgs) (*pb.ReadReturn, error) {
+func ReadNFS(in *pb.ReadArgs, wq *ServerWriteQueue) (*pb.ReadReturn, error) {
+
+	// persist all writes before we read; this greatly simplifies things but
+	// we could do better
+	wq.ExecuteAllWrites()
+
 	filepath, err := InumToPath(int(in.Fh.Inode))
 	if err != nil {
 		return &pb.ReadReturn{}, errors.New("inode not found")
@@ -54,6 +59,52 @@ func ReadNFS(in *pb.ReadArgs) (*pb.ReadReturn, error) {
 		fmt.Println("Read returned error")
 		return &pb.ReadReturn{}, err
 	}
+
+	/*
+		// TODO: handle the case here when we're trying to read the entire file...
+
+		// TODO: go through queue, for each write-to-be-committed:
+		//  1) check if inode is same as this file; if not, go to next item in queue
+		//  2) check if offset + count have any overlap with the boundaries to be read; if not, go to next item in queue
+		//  3) calculate the positions in data[] that need to be updated
+		//  4) update that in-memory structure
+		low_boundary_read := in.Offset             // int64
+		high_boundary_read := in.Offset + in.Count // int64
+
+		// is this a full file read?
+		if low_boundary_read == 0 && high_boundary_read
+
+		for i := 0; i < wq.size; i++ {
+			write_inode := wq.queue[i].args.Fh.Inode
+			if write_inode != in.Fh.Inode {
+				continue
+			}
+			fmt.Printf("Not-yet-committed update found for the file being read\n")
+
+			low_boundary_write := wq.queue[i].args.Offset
+			high_boundary_write := low_boundary_write + wq.queue[i].args.Count
+			write_data := wq.queue[i].args.Data
+
+			if low_boundary_write > high_boundary_read || high_boundary_write < low_boundary_read {
+				continue
+			}
+
+			// entirely contained within, make the changes
+			if low_boundary_write >= low_boundary_read && high_boundary_write <= high_boundary_read {
+				fmt.Printf("Write contained within read, updating in-memory\n")
+				upper_data := data[high_boundary_write:high_boundary_read]
+				data = append(data[low_boundary_read:low_boundary_write],
+					write_data[low_boundary_write:high_boundary_write]...)
+				data = append(data, upper_data...)
+			}
+
+			// write is entirely after the read (i.e. we're appending to the file)
+			if low_boundary_write == high_boundary_read {
+				data = append(data
+			}
+
+		}
+	*/
 
 	n_bytes_read = n_bytes_read // to supress compiler warning
 

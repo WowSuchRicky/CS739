@@ -33,17 +33,19 @@
 package main
 
 import (
-	nfs "github.com/Ricky54326/CS739/hw2/server/lib"
-	"log"
-	"net"
-
+	"fmt"
 	pb "github.com/Ricky54326/CS739/hw2/protos"
+	nfs "github.com/Ricky54326/CS739/hw2/server/lib"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"log"
+	"net"
+	"os"
 )
 
 const (
-	port = ":50051"
+	port                 = ":50051"
+	writeverf3_file_path = ".writeverf3"
 )
 
 var wq *(nfs.ServerWriteQueue)
@@ -64,11 +66,15 @@ func (s *server) Remove(ctx context.Context, in *pb.RemoveArgs) (*pb.RemoveRetur
 }
 
 func (s *server) Read(ctx context.Context, in *pb.ReadArgs) (*pb.ReadReturn, error) {
-	return nfs.ReadNFS(in)
+	return nfs.ReadNFS(in, wq)
 }
 
 func (s *server) Write(ctx context.Context, in *pb.WriteArgs) (*pb.WriteReturn, error) {
 	return nfs.WriteNFS(in, wq)
+}
+
+func (s *server) Commit(ctx context.Context, in *pb.CommitArgs) (*pb.CommitReturn, error) {
+	return nfs.CommitNFS(in, wq)
 }
 
 func (s *server) Readdir(ctx context.Context, in *pb.ReaddirArgs) (*pb.ReaddirReturn, error) {
@@ -80,7 +86,7 @@ func (s *server) Root(ctx context.Context, in *pb.RootArgs) (*pb.RootReturn, err
 }
 
 func (s *server) Getattr(ctx context.Context, in *pb.GetAttrArgs) (*pb.GetAttrReturn, error) {
-	return nfs.GetAttrNFS(in)
+	return nfs.GetAttrNFS(in, wq)
 }
 
 func (s *server) Mkdir(ctx context.Context, in *pb.MkdirArgs) (*pb.MkdirReturn, error) {
@@ -91,18 +97,50 @@ func (s *server) Rename(ctx context.Context, in *pb.RenameArgs) (*pb.RenameRetur
 	return nfs.RenameNFS(in)
 }
 
-func (s *server) Commit(ctx context.Context, in *pb.CommitArgs) (*pb.CommitReturn, error) {
-	return nfs.CommitNFS(in, wq)
-}
-
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	// initialize our write queue
-	wq = nfs.InitializeServerWriteQueue()
+	// check if writeverf3 hidden file exists;
+	// - if it does, read from it to get number
+	// - if it doesn't, write to it with the number 0
+	// this will be returned on every write or commit request
+
+	// client will read it and get in sync
+	// if client has the number and it gets one back that is different, it knows
+	// server crashed; it should retry everything in its buffer
+
+	// client cleans its buffer on two conditions:
+	// 1) a commit successfully returns
+	// 2) the server returns back an incremented commit_number, meaning a commit happened
+
+	// server crash number overrides commit number; we should retry everything if both
+	// are returned as different
+
+	var writeverf3 int32
+	file, err := os.OpenFile(writeverf3_file_path, os.O_RDWR, os.ModePerm)
+	if err != nil {
+		fmt.Printf("error on opening: %v\n", err)
+		os.Exit(-1)
+	}
+	_, err = fmt.Fscanf(file, "%d", &writeverf3)
+	if err != nil {
+		fmt.Printf("error on scanning: %v\n", err)
+	}
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		fmt.Printf("error on fseek: %v\n", err)
+	}
+
+	fmt.Printf("Writeverf3 value: %d\n", writeverf3)
+
+	// increment it and persist it again
+	writeverf3 += 1
+	fmt.Fprintf(file, "%d", writeverf3)
+
+	wq = nfs.InitializeServerWriteQueue(writeverf3)
 
 	// run the server
 	s := grpc.NewServer()
