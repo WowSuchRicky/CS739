@@ -44,6 +44,7 @@ func WriteNFS(in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 }
 
 func StableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
+
 	// get file object for that file (not an fd)
 	f, err := os.OpenFile(filepath, os.O_WRONLY, 0)
 	if err != nil {
@@ -54,7 +55,12 @@ func StableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.W
 	data_to_write := in.Data[0:in.Count]
 	n_bytes_written, err := f.WriteAt(data_to_write, in.Offset)
 	n_bytes_written = n_bytes_written // to supress compiler warning
-	// TODO: should we be calling FSYNC here?
+
+	err = f.Sync()
+	if err != nil {
+		fmt.Printf("Fsync'd in stable write\n")
+		return &pb.WriteReturn{}, err
+	}
 
 	// get attributes after writing it
 	var f_info syscall.Stat_t
@@ -73,9 +79,8 @@ func StableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.W
 }
 
 func UnstableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
+
 	wq.InsertWrite(in, filepath)
-	fmt.Printf("Write queue after insertion: %v\n", wq)
-	fmt.Printf("Each entry: \n")
 	for i := 0; i < len(wq.queue); i++ {
 		fmt.Printf("Entry %d: %v\n", i, *wq.queue[i])
 	}
@@ -83,4 +88,24 @@ func UnstableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb
 			Writeverf3: wq.writeverf3,
 			NCommit:    wq.n_commit},
 		nil
+}
+
+func ApplyWriteFromBuffer(filepath string, in *pb.WriteArgs) error {
+
+	fmt.Printf("Applying write from buffer\n")
+
+	// get file object for that file (not an fd)
+	f, err := os.OpenFile(filepath, os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+
+	// write the data into it starting at in.Offset
+	data_to_write := in.Data[0:in.Count]
+	_, err = f.WriteAt(data_to_write, in.Offset)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

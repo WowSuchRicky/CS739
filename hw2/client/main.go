@@ -19,7 +19,7 @@ import (
 const (
 	address                 = "104.197.218.40:50051"
 	err_grpc                = "rpc error: code = 14 desc = grpc: the connection is unavailable"
-	ENABLE_WRITE_BUFFER_OPT = false
+	ENABLE_WRITE_BUFFER_OPT = true
 )
 
 func usage() {
@@ -386,6 +386,12 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (f *File) ReadAll(ctx context.Context) ([]byte, error) {
+
+	// force all changes on server to disk, resend changes if notice difference
+	if ENABLE_WRITE_BUFFER_OPT {
+		performCommit()
+		wq.Reinitialize()
+	}
 
 	// get file size
 	r, err := conn_pb.Getattr(context.Background(),

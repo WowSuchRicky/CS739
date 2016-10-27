@@ -32,13 +32,15 @@ func (wq *ServerWriteQueue) Reinitialize() {
 
 }
 
-// this should be called when server receives COMMIT request
+// this should be called when server receives COMMIT request;
+// note: this call does not guarantee the writes reach the disk; caller
+// should call syscall.Sync() after this to ensure that
 func (wq *ServerWriteQueue) ExecuteAllWrites() {
 	for i := 0; i < wq.size; i++ {
 		// here it is safe to ignore errors (i.e. file doens't exist anymore),
 		// as it is no different than normal UNIX write semantics (no guarantees on when
 		// writes are persisted)
-		StableWrite(wq.queue[i].filepath, wq.queue[i].args, wq)
+		ApplyWriteFromBuffer(wq.queue[i].filepath, wq.queue[i].args)
 	}
 	wq.Reinitialize()
 	wq.n_commit += 1

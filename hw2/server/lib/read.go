@@ -14,11 +14,9 @@ import (
 // if we wanted to cache open file descriptors, we would just have to do
 // that separately
 
-func ReadNFS(in *pb.ReadArgs, wq *ServerWriteQueue) (*pb.ReadReturn, error) {
+// note; with write optimization, the client should call a commit prior to calling read
 
-	// persist all writes before we read; this greatly simplifies things but
-	// we could do better
-	wq.ExecuteAllWrites()
+func ReadNFS(in *pb.ReadArgs, wq *ServerWriteQueue) (*pb.ReadReturn, error) {
 
 	filepath, err := InumToPath(int(in.Fh.Inode))
 	if err != nil {
