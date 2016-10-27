@@ -17,8 +17,9 @@ import (
 
 // @TODO: Remember that this is the VM IP address
 const (
-	address  = "104.197.218.40:50051"
-	err_grpc = "rpc error: code = 14 desc = grpc: the connection is unavailable"
+	address                 = "104.197.218.40:50051"
+	err_grpc                = "rpc error: code = 14 desc = grpc: the connection is unavailable"
+	ENABLE_WRITE_BUFFER_OPT = false
 )
 
 func usage() {
@@ -292,12 +293,6 @@ func (d *Dir) Remove(ctx context.Context, req *fuse.RemoveRequest) error {
 
 }
 
-// NOTE: is not working
-// Problem: we need to get the NFS file handle of the destination directory of the rename
-// More specifically: the 3rd argument must be of type fs.Node; fs.Node does not directly have a file handle, so we
-// cannot dereference it directly
-// Approach #1: do some casting to get the pointer out of newDir
-// Approach #2: the renameRequest contains the NodeID of destination directory; can we somehow do something with this?
 func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Node) error {
 	fmt.Printf("Rename called\n")
 
@@ -313,7 +308,7 @@ func (d *Dir) Rename(ctx context.Context, req *fuse.RenameRequest, newDir fs.Nod
 		&pb.RenameArgs{
 			Dirfh:  d.Fh,
 			Name:   req.OldName,
-			Tofh:   x, // the question becomes what the hell do we use here...
+			Tofh:   x,
 			Toname: req.NewName})
 
 	// GRPC error, retry..
@@ -368,19 +363,23 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Uid = r.Attr.Uid
 	a.Gid = r.Attr.Gid
 
-	max_size := a.Size
-	for i := 0; i < len(wq.Queue); i++ {
-		write_inode := wq.Queue[i].Fh.Inode
-		if write_inode != f.Fh.Inode {
-			continue
+	// it's possibly the file length is longer than getAttr returns, if we wrote
+	// but that write hasn't persisted on server yet
+	if ENABLE_WRITE_BUFFER_OPT {
+		max_size := a.Size
+		for i := 0; i < len(wq.Queue); i++ {
+			write_inode := wq.Queue[i].Fh.Inode
+			if write_inode != f.Fh.Inode {
+				continue
+			}
+			new_size := uint64(wq.Queue[i].Offset + wq.Queue[i].Count)
+			if new_size > max_size {
+				max_size = new_size
+			}
 		}
-		new_size := uint64(wq.Queue[i].Offset + wq.Queue[i].Count)
-		if new_size > max_size {
-			max_size = new_size
-		}
+		a.Size = max_size
+
 	}
-	a.Size = max_size
-	fmt.Printf("Checking attributes of file; max size is: %v\n", a.Size)
 
 	// TODO: ignoring some other stuff in fuse Attr structure, that maybe we want...
 	return nil
@@ -438,13 +437,13 @@ func (f *File) Write(ctx context.Context, req *fuse.WriteRequest, resp *fuse.Wri
 	fmt.Println("Write called")
 
 	// STABLE WRITE if can't fit write into queue no matter what
-	if int64(len(req.Data)) > nfsc.CLIENT_WRITE_QUEUE_CAPACITY {
+	// also, ALWAYS stable write if we disabled optimization
+	if (int64(len(req.Data)) > nfsc.CLIENT_WRITE_QUEUE_CAPACITY) || !ENABLE_WRITE_BUFFER_OPT {
 		return performWrite(ctx, req, resp, f, true)
 	}
 
 	// COMMIT and empty queue if queue is already too full
 	if wq.Size+int64(len(req.Data)) > nfsc.CLIENT_WRITE_QUEUE_CAPACITY {
-		fmt.Println("Trying to perform commit\n")
 		performCommit()
 		wq.Reinitialize()
 	}
@@ -488,10 +487,6 @@ func performWrite(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteR
 	}
 
 	// handle retries if server crashed (thus lost its queue) =>
-	// if client writeverf3 is -1, then just overwrite it with what returned
-	// if client writeverf3 is not -1, and server returns same one, do nothing
-	// if client writeverf3 is not -1, and server returns different one, resend
-	// everything in the queue and update writeverf3 upon receipt
 	if wq.Writeverf3 == -1 {
 		wq.Writeverf3 = r.Writeverf3
 	} else {
@@ -517,6 +512,9 @@ func performWrite(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteR
 }
 
 func performCommit() (*pb.CommitReturn, error) {
+
+	fmt.Printf("Performing commit\n")
+
 	r, err := conn_pb.Commit(context.Background(),
 		&pb.CommitArgs{})
 
@@ -548,7 +546,7 @@ func performCommit() (*pb.CommitReturn, error) {
 func sendAllWritesInQueue() {
 	for i := 0; i < len(wq.Queue); i++ {
 		nfs_req := wq.Queue[i]
-		fmt.Printf("Retrying %v\n", nfs_req)
+		fmt.Printf("Sending all writes in queue again\n")
 		_, err := conn_pb.Write(context.Background(), nfs_req)
 		for err != nil && err.Error() == err_grpc {
 			_, err = conn_pb.Write(context.Background(), nfs_req)
