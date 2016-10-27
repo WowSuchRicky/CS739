@@ -5,7 +5,11 @@ import (
 	pb "github.com/Ricky54326/CS739/hw2/protos"
 )
 
-var CLIENT_WRITE_QUEUE_CAPACITY = int64(10)
+// change this for more efficient write batching
+var CLIENT_WRITE_QUEUE_CAPACITY = int64(1000)
+
+// TODO: this isn't being used right now; point is to limit number of writes that we
+// can batch
 var MAX_N_DELAYED_WRITES = int64(100)
 
 type ClientWriteQueue struct {
