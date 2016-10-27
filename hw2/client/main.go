@@ -67,7 +67,8 @@ func main() {
 	root_ret, err := conn_pb.Root(context.Background(), &pb.RootArgs{Path: root_path_on_server})
 	nfs_fs := &FS{Fh: root_ret.Fh}
 
-	wq = nfsc.InitializeClientWriteQueue()
+	writeverf3 := int32(-1)
+	wq = nfsc.InitializeClientWriteQueue(writeverf3)
 
 	err = fs.Serve(c, nfs_fs)
 	if err != nil {
@@ -123,6 +124,8 @@ func (d *Dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Size = r.Attr.Size
 	a.Uid = r.Attr.Uid
 	a.Gid = r.Attr.Gid
+
+	fmt.Printf("Calling attr on dir\n")
 
 	// TODO: ignoring some other stuff in fuse Attr structure, that maybe we want...
 	return nil
@@ -365,6 +368,20 @@ func (f *File) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Uid = r.Attr.Uid
 	a.Gid = r.Attr.Gid
 
+	max_size := a.Size
+	for i := 0; i < len(wq.Queue); i++ {
+		write_inode := wq.Queue[i].Fh.Inode
+		if write_inode != f.Fh.Inode {
+			continue
+		}
+		new_size := uint64(wq.Queue[i].Offset + wq.Queue[i].Count)
+		if new_size > max_size {
+			max_size = new_size
+		}
+	}
+	a.Size = max_size
+	fmt.Printf("Checking attributes of file; max size is: %v\n", a.Size)
+
 	// TODO: ignoring some other stuff in fuse Attr structure, that maybe we want...
 	return nil
 }
@@ -464,14 +481,28 @@ func performWrite(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteR
 		Data:   req.Data,
 		Stable: stable}
 
-	if !stable { // add to queue if unstable write
-		wq.InsertWrite(nfs_req)
+	// retry until it sends
+	r, err := conn_pb.Write(context.Background(), nfs_req)
+	for err != nil && err.Error() == err_grpc {
+		r, err = conn_pb.Write(context.Background(), nfs_req)
 	}
 
-	// retry until it sends
-	_, err := conn_pb.Write(context.Background(), nfs_req)
-	for err != nil && err.Error() == err_grpc {
-		_, err = conn_pb.Write(context.Background(), nfs_req)
+	// handle retries if server crashed (thus lost its queue) =>
+	// if client writeverf3 is -1, then just overwrite it with what returned
+	// if client writeverf3 is not -1, and server returns same one, do nothing
+	// if client writeverf3 is not -1, and server returns different one, resend
+	// everything in the queue and update writeverf3 upon receipt
+	if wq.Writeverf3 == -1 {
+		wq.Writeverf3 = r.Writeverf3
+	} else {
+		if wq.Writeverf3 != r.Writeverf3 {
+			sendAllWritesInQueue()
+			wq.Writeverf3 = r.Writeverf3
+		}
+	}
+
+	if !stable { // add to queue if unstable write
+		wq.InsertWrite(nfs_req)
 	}
 
 	// non-GRPC error...
@@ -486,11 +517,11 @@ func performWrite(ctx context.Context, req *fuse.WriteRequest, resp *fuse.WriteR
 }
 
 func performCommit() (*pb.CommitReturn, error) {
-	_, err := conn_pb.Commit(context.Background(),
+	r, err := conn_pb.Commit(context.Background(),
 		&pb.CommitArgs{})
 
 	for err != nil && err.Error() == err_grpc {
-		_, err = conn_pb.Commit(context.Background(),
+		r, err = conn_pb.Commit(context.Background(),
 			&pb.CommitArgs{})
 	}
 
@@ -499,5 +530,28 @@ func performCommit() (*pb.CommitReturn, error) {
 		return nil, err
 	}
 
+	// check writeverf3; if receive different one than expected,
+	// resend queue and then recommit
+	if wq.Writeverf3 == -1 {
+		wq.Writeverf3 = r.Writeverf3
+	} else {
+		if wq.Writeverf3 != r.Writeverf3 {
+			sendAllWritesInQueue()
+			wq.Writeverf3 = r.Writeverf3
+			return performCommit() // try to commit again
+		}
+	}
+
 	return nil, nil
+}
+
+func sendAllWritesInQueue() {
+	for i := 0; i < len(wq.Queue); i++ {
+		nfs_req := wq.Queue[i]
+		fmt.Printf("Retrying %v\n", nfs_req)
+		_, err := conn_pb.Write(context.Background(), nfs_req)
+		for err != nil && err.Error() == err_grpc {
+			_, err = conn_pb.Write(context.Background(), nfs_req)
+		}
+	}
 }

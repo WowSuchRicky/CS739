@@ -1,11 +1,67 @@
 Write buffer optimization
 
+-----
+Premise:
+Many writes are small, so we're incurring a lot of I/O overhead that could be avoided if we batch them into a single large write.
+
+-----
+How it works:
+Each client maintains a queue.
+This queue contains information for writes that have been sent to but
+not necessarily persisted on the server.
+There is a maximum size to this queue*.
+The server has a queue as well; it stores all the writes that it hasn't
+persisted yet in that queue. The server's queue is unbounded.
+
+When a client writes, what we do depends on this queue and the write:
+1. If the write is huge (> capacity of the queue), it is sent directly
+   to the server as a stable (synchronous) write. It does not go in the queue.
+2. If the queue has space for the write, the client will send an
+   unstable (asynchronous) write to the server, and put that request in
+   the queue as well. This allows it to be retried later.
+3. If the write is not greater than queue size, but it won't currently fit in
+   the queue, the client will issue a COMMIT to the server, telling it
+   to persist everything in its queue. When this commit returns, the client
+   frees its queue, and places that write inside it
+
+Every WRITE and COMMIT call will return a 'writeverf3' number from the server.
+This number is persisted on the server, and increments each time the server
+restarts.
+The client keeps track of the last known writeverf3 it received.
+If it ever sends a WRITE or COMMIT request and notices the writeverf3 number
+has increased, it will resend everything in its queue; that increase means
+the server crashed/reset and thus lost its volatile state. Doing this will catch the server up to the client.
+
+
+NOTE: the below is something we should do, but haven't done, and won't have
+      done in time for presentation.
+The server can have multiple clients.
+Since the server only stores one queue, it doesn't differentiate between
+clients. When it receives a commit request, it persists everything, from all
+clients. This means that the client queues might get out of sync from the
+server queue without the server crashing.
+There's a way around this but it's not currently implemented.
+The idea is to keep an additional number in the server which increments on every commit. This would be returned by various requests, and the client keeps
+track of the last one it saw. If at any point the client sees an increase
+but the client didn't call COMMIT itself, it knows that the server queue
+was persisted and thus it should free its queue as well.
+
+   
+
+
+
+*(adjust in client/lib/client_write_queue.go)
+
+
+
+
+-----------------
+IGNORE BELOW THIS 
+-----------------
+
 References:
 Could be good => http://www.scs.stanford.edu/nyu/02fa/notes/l3.pdf
 Although I don't think we'll do the exact same thing
-
------
-Premise: many writes are small, so we're incurring a lot of I/O overhead that could be avoided if we batch them into a single large write.
 
 -----
 How should this work?

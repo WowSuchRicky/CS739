@@ -75,6 +75,10 @@ func StableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.W
 func UnstableWrite(filepath string, in *pb.WriteArgs, wq *ServerWriteQueue) (*pb.WriteReturn, error) {
 	wq.InsertWrite(in, filepath)
 	fmt.Printf("Write queue after insertion: %v\n", wq)
+	fmt.Printf("Each entry: \n")
+	for i := 0; i < len(wq.queue); i++ {
+		fmt.Printf("Entry %d: %v\n", i, *wq.queue[i])
+	}
 	return &pb.WriteReturn{
 			Writeverf3: wq.writeverf3,
 			NCommit:    wq.n_commit},
