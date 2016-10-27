@@ -45,8 +45,29 @@ struct file_handle get_fhp(char* pathname, int *mid) {
     fprintf(stdout, "fhp->f_handle: %d\n", fhp->f_handle);
     fprintf(stdout, "mount_id: %d\n", mount_id);
 
+	int mount_fd = open("/", O_RDONLY);
+	int fd = open_by_handle_at(mount_fd, fhp, O_RDONLY);
+	char buf[100];
+	int nread = read(fd, buf, sizeof(buf));
+	printf("fd in getting fd: %d\n", fd);
+	printf("Read %s \n", buf);
+	printf("Read %zd bytes\n", nread);
+
     *mid = mount_id;
     return *fhp;
+}
+
+int fh_open(struct file_handle fhp) {
+	char buf[10];
+	int mount_fd = open("test", O_RDONLY);
+	int fd = open_by_handle_at(mount_fd, &fhp, O_RDONLY);
+	printf("fd: %d\n", fd);
+	int nread = read(fd, buf, sizeof(buf));
+	printf("Read %s \n", buf);
+	printf("Read %zd bytes\n", nread);
+
+	
+	return fd;
 }
 
 void read_fhp(struct file_handle *fhp) {
@@ -59,9 +80,10 @@ import "C"
 import "fmt"
 
 func main() {
-    pathname := C.CString("test")
+    pathname := C.CString("test/test.txt")
     var mount_id C.int
 	fhp := C.get_fhp(pathname, &mount_id)
 	fmt.Printf("fhp: %v\n", fhp);
 	C.read_fhp(&fhp);
+	C.fh_open(fhp);
 }
