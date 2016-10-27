@@ -6,7 +6,7 @@ import (
 )
 
 // change this for more efficient write batching
-var CLIENT_WRITE_QUEUE_CAPACITY = int64(1000)
+var CLIENT_WRITE_QUEUE_CAPACITY = int64(10000)
 
 // TODO: this isn't being used right now; point is to limit number of writes that we
 // can batch

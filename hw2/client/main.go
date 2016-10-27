@@ -19,7 +19,7 @@ import (
 const (
 	address                 = "104.197.218.40:50051"
 	err_grpc                = "rpc error: code = 14 desc = grpc: the connection is unavailable"
-	ENABLE_WRITE_BUFFER_OPT = true
+	ENABLE_WRITE_BUFFER_OPT = false
 )
 
 func usage() {
