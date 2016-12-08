@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-
+#include <signal.h>
 
 // addr given to mprotect must be at page boundary (mask lower bits)
 #define GET_PAGE_BOUNDARY(addr, pgsize) (addr & ~(pgsize-1))
@@ -86,8 +86,25 @@ void allocateStuff(int *existingNum) {
 }
 
 
+/* Begin sig handler stuff */
+static void
+handler(int sig, siginfo_t *si, void *unused) {
+  fprintf(stderr, "Got SIGSEGV at address: 0x%lx\n",
+    (long) si->si_addr);
+    fflush(stdout);
+    exit(EXIT_FAILURE);
+}
+
 
 int main() {
+  // set up sig handler:
+   struct sigaction sa;
+   sa.sa_flags = SA_SIGINFO;
+   sigemptyset(&sa.sa_mask);
+   sa.sa_sigaction = handler;
+   if (sigaction(SIGSEGV, &sa, NULL) == -1)
+     exit(1);
+  
   void *startHeap = getHeapBound();
   int *intPtr = allocateInteger(); // a protected value in parent
   void *endHeap = getHeapBound();
