@@ -91,8 +91,7 @@ static void
 handler(int sig, siginfo_t *si, void *unused) {
   fprintf(stderr, "Got SIGSEGV at address: 0x%lx\n",
     (long) si->si_addr);
-    fflush(stdout);
-    exit(EXIT_FAILURE);
+  exit(EXIT_FAILURE);
 }
 
 
