@@ -8,34 +8,48 @@ globally imported modules. The idea is to pick out any writes to those globally 
 change the namespace to something else. We can do some static analysis to handle this
 
 Process to do that:
-// IGNORE 1) maintain a list of globally imported modules
 
 -- begin lambda import --
-2) build a list of things imported in the lambda
-// IGNORE 3) get the intersection of the two lists
-   - if empty, nothing left to do so stop
-   - if non-empty, continue
-4) (pass #1) visit each assignment (i.e. WRITE!) statement in the AST
-   if left hand side is in our list of namespaces, then note the namespace and
-   variable name
-5) once we've done that entire pass, we have a list of variables in separate namespaces
+
+1) build a list of things imported in the lambda (and remove them - that's an implementation detail)
+
+2) visit each assignment (i.e. WRITE!) statement in the AST
+   if left hand side is in our list of namespaces, then note the namespace and variable name
+
+3) once we've done that entire pass, we have a list of variables in separate namespaces
    that are being written to. These are essentially what we need to change.
-6) For each namespace in that list, create a new uniquely named namespace object (use 
-   a dictionary to keep track of these; key is old namespace name, value is new one). We
-   need to do this in the actual code, so modify the AST in this case
-7) (think of namespace as a dict) - for each variable in that list, add an entry in 
-   the namespace where the key is the variable name and the value is the reference to
-   the older namespace (i.e. we would make a new namespace for numpy and if the
-   program has numpy.arange = 4, we add numpy.arange to our list so we make a new 
-   namespace called numpy2 (or something like that), we add key arange to it with value
-   numpy.arange.
-6) (pass #2) visit each name usage from module and if its reerring to something that was in our variable list, change the namespace to the new namespace
+
+4) manage a dictionary that maps old namespace name to new namespace name
+   For each namespace in the previous list, create a new uniquely named namespace object 
+   and add the mapping from old to new to this dict
+
+5) the namespace itself acts as a dictionary - for each variable in the modified-variables 
+   list, add an entry in the namespace where the key is the variable name and the value 
+   is the reference to the older namespace (i.e. we would make a new namespace for numpy 
+   and if the program has numpy.arange = 4, we add numpy.arange to our list so we make a 
+   new namespace called numpy2 (or something like that), we add key arange to it with 
+   value numpy.arange.
+
+6) Add actual code to lambda to create the new namespaces and add those variables to them, 
+   merge this with original AST
+
+7) visit each name usage from module and if its referring to something that was in 
+   our variable list, change the namespace to the new namespace
 
 -- end lambda import --
-7) we now have some changed lambda code; we can store this somewhere so we don't need to go through this importation process repeatedly (makes sense if constantly executing similar lambda)
 
-ASSUMPTIONS:
- (big deal, could be deal breaker): not handling recursive namespace differences
+8) we can now execute this updated lambda code
+
+ASSUMPTIONS / CAVEATS:
+ - not handling recursive namespace differences (I believe we could though)
+ - we're assuming anything imported is available throughout the entire program, 
+   i.e. it is imported at the top of the module (this is particularly notable 
+   now because the implementation below is removing these imports and re-adding 
+   them at the top)
+ - creating a uniquely named namespace would require looking at all global 
+   variables and picking a unique name out of them (doable, but how expensive?) 
+ - not currently handling import __ from __, but that's an easy fix
+
 '''
 
 # good resource: http://stackoverflow.com/questions/1515357/simple-example-of-how-to-use-ast-nodevisitor
@@ -44,8 +58,12 @@ ASSUMPTIONS:
 # take a look at this: http://stackoverflow.com/questions/37281928/making-a-copy-of-an-entire-namespace
 # interesting read on exec: http://lucumr.pocoo.org/2011/2/1/exec-in-python/
 
-
 DEBUG = False
+
+imported_modules = []
+assigned_variables = []
+new_namespaces = {} # key is old namespace name, value is new namespace name
+namespace_vars = {} # key is new namespace name, value is list of variables being written in it
 
 # recurse down an Attribute node and return full string
 def recurseAttribute(node):
@@ -56,17 +74,15 @@ def recurseAttribute(node):
     else:
         return ''
 
+# recurse down an Attribute node and change the name at the lowest level
+# (note: lowest level is left most, as in lowest_level.x.y) to new namespace
 def changeNamespace(node):
     if isinstance(node, ast.Attribute):
         changeNamespace(node.value)
     elif isinstance(node, ast.Name):
         node.id = new_namespaces[node.id]
 
-imported_modules = []
-assigned_variables = []
-new_namespaces = {} # key is old namespace name, value is new namespace name
-namespace_vars = {} # key is new namespace name, value is list of variables being written in it
-
+# remove all import statements and populated imported_modules list
 class RemoveImports(ast.NodeTransformer):
     def visit_Import(self, node):
         if (DEBUG):
@@ -76,7 +92,7 @@ class RemoveImports(ast.NodeTransformer):
             imported_modules.append(x.name)
         return None
 
-
+# add all variables being assigned to in different namespace to assigned_varaibles
 class FindAssignedVars(ast.NodeVisitor):
     def visit_Assign(self, node):
         if (DEBUG):
@@ -87,6 +103,7 @@ class FindAssignedVars(ast.NodeVisitor):
             if isinstance(x, ast.Attribute):
                 assigned_variables.append(recurseAttribute(x))
 
+# update namespace of variable references that we have in our namespace_vars dict
 class ChangeRelevantNamespaces(ast.NodeTransformer):
     def visit_Attribute(self, node):
         var_delim = recurseAttribute(node).split('.')
@@ -96,6 +113,7 @@ class ChangeRelevantNamespaces(ast.NodeTransformer):
                     print 'Changing namespace reference'
                 changeNamespace(node)
         return node
+
 
 def executeFileWithProtection(path):
 
@@ -107,7 +125,7 @@ def executeFileWithProtection(path):
     if (DEBUG):
         print ast.dump(node)
 
-    # get list of imported modules, and list of variables being
+    # get list of imported modules (and remove imports), and list of variables being
     # assigned to that are in a different namespace
     RemoveImports().visit(node)
     FindAssignedVars().visit(node)
@@ -148,7 +166,6 @@ def executeFileWithProtection(path):
     # 2) add an assignment statement with:
     #    LHS: new_namespace.var_name
     #    RHS: old_namespace.var_name 
-
     codeToAdd = "class Namespace:\n"
     codeToAdd += "    def __init__(self, **kwargs):\n"
     codeToAdd += "        self.__dict__.update(kwargs)\n"
@@ -157,6 +174,7 @@ def executeFileWithProtection(path):
         for var_name in namespace_vars[new_ns]:
             codeToAdd += (new_ns + "." + var_name + " = " + old_ns + "." + var_name + "\n")
 
+    # we have to pull out the import statements, because the code we're adding must come after them
     import_stmts = ""
     for x in imported_modules:
         import_stmts += 'import ' + x + '\n'
@@ -164,16 +182,10 @@ def executeFileWithProtection(path):
     codeToAdd = import_stmts + codeToAdd
 
     new_ast = ast.parse(codeToAdd, mode = "exec")
-
-    # merge ASTs
-    # NOTE: for it to be correct, new_code_ast must come after import statements, 
-    #       which is why we pull out those import statements earlier
     new_ast.body += node.body
 
-    # now that we've done that, go back through the AST and change each assignment
-    # statement that was writing to a different namespace such that it is now writing
-    # to the new namespace (update AST)
-
+    # now that we've done that, go back through the AST and change each variable reference
+    # that we want to refer to new namesapce 
     if (DEBUG):
         print 'Second pass, changing assignments now'
 
@@ -188,6 +200,7 @@ def executeFileWithProtection(path):
     exec(codeobj)
 
 
+# just compile and execute code without doing any modification
 def executeFileWithoutProtection(path):
     f = open(path, 'r')
     source = f.read()
